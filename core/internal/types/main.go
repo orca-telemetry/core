@@ -19,34 +19,6 @@ type (
 		// Core level operations
 		RegisterProcessor(ctx context.Context, proc *pb.ProcessorRegistration) error
 		EmitWindow(ctx context.Context, window *pb.Window) (pb.WindowEmitStatus, error)
-
-		// Data level operations
-		ReadWindowTypes(ctx context.Context) (*pb.WindowTypes, error)
-		ReadAlgorithms(ctx context.Context) (*pb.Algorithms, error)
-		ReadProcessors(ctx context.Context) (*pb.Processors, error)
-		ReadResultsStats(ctx context.Context) (*pb.ResultsStats, error)
-		ReadResultFieldsForAlgorithm(
-			ctx context.Context,
-			algorithmFieldsRead *pb.AlgorithmFieldsRead,
-		) (*pb.AlgorithmFields, error)
-		ReadResultsForAlgorithm(
-			ctx context.Context,
-			resultsForAlgorithm *pb.ResultsForAlgorithmRead,
-		) (*pb.ResultsForAlgorithm, error)
-		ReadResultsForAlgorithmAndMetadata(
-			ctx context.Context,
-			resultsForAlgorithmAndMetadata *pb.ResultsForAlgorithmAndMetadataRead,
-		) (*pb.ResultsForAlgorithmAndMetadata, error)
-		ReadWindows(ctx context.Context, windowsRead *pb.WindowsRead) (*pb.Windows, error)
-		ReadDistinctMetadataForWindowType(
-			ctx context.Context,
-			windowMetadataRead *pb.DistinctMetadataForWindowTypeRead,
-		) (*pb.DistinctMetadataForWindowType, error)
-		ReadWindowsForMetadata(
-			ctx context.Context,
-			windowsForMetadataRead *pb.WindowsForMetadataRead,
-		) (*pb.WindowsForMetadata, error)
-		Annotate(ctx context.Context, annotateWrite *pb.AnnotateWrite) (*pb.AnnotateResponse, error)
 	}
 )
 

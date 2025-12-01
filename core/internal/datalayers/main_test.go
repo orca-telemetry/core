@@ -2,7 +2,6 @@ package datalayers
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -541,8 +540,6 @@ func TestValidDependenciesBetweenProcessors(t *testing.T) {
 
 	err = dlyr.RegisterProcessor(testCtx, &proc_1)
 	assert.NoError(t, err)
-	algorithms, err := dlyr.ReadAlgorithms(testCtx)
-	fmt.Println(algorithms)
 
 	err = dlyr.RegisterProcessor(testCtx, &proc_2)
 	assert.NoError(t, err)
