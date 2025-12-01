@@ -21,7 +21,6 @@ SELECT
     mf.name AS metadata_field_name,
     mf.description AS metadata_field_description
 FROM window_type wt
-INNER JOIN metadata_fields_references mfr ON wt.id = mfr.window_type_id
 INNER JOIN metadata_fields mf ON mfr.metadata_fields_id = mf.id
 ORDER BY wt.name, wt.version, mf.name;
 

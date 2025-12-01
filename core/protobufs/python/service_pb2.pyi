@@ -93,19 +93,29 @@ class AlgorithmDependency(_message.Message):
     processor_runtime: str
     def __init__(self, name: _Optional[str] = ..., version: _Optional[str] = ..., processor_name: _Optional[str] = ..., processor_runtime: _Optional[str] = ...) -> None: ...
 
+class StructResultField(_message.Message):
+    __slots__ = ("name", "description")
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    DESCRIPTION_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    description: str
+    def __init__(self, name: _Optional[str] = ..., description: _Optional[str] = ...) -> None: ...
+
 class Algorithm(_message.Message):
-    __slots__ = ("name", "version", "window_type", "dependencies", "result_type")
+    __slots__ = ("name", "version", "window_type", "dependencies", "result_type", "struct_result_field")
     NAME_FIELD_NUMBER: _ClassVar[int]
     VERSION_FIELD_NUMBER: _ClassVar[int]
     WINDOW_TYPE_FIELD_NUMBER: _ClassVar[int]
     DEPENDENCIES_FIELD_NUMBER: _ClassVar[int]
     RESULT_TYPE_FIELD_NUMBER: _ClassVar[int]
+    STRUCT_RESULT_FIELD_FIELD_NUMBER: _ClassVar[int]
     name: str
     version: str
     window_type: WindowType
     dependencies: _containers.RepeatedCompositeFieldContainer[AlgorithmDependency]
     result_type: ResultType
-    def __init__(self, name: _Optional[str] = ..., version: _Optional[str] = ..., window_type: _Optional[_Union[WindowType, _Mapping]] = ..., dependencies: _Optional[_Iterable[_Union[AlgorithmDependency, _Mapping]]] = ..., result_type: _Optional[_Union[ResultType, str]] = ...) -> None: ...
+    struct_result_field: _containers.RepeatedCompositeFieldContainer[StructResultField]
+    def __init__(self, name: _Optional[str] = ..., version: _Optional[str] = ..., window_type: _Optional[_Union[WindowType, _Mapping]] = ..., dependencies: _Optional[_Iterable[_Union[AlgorithmDependency, _Mapping]]] = ..., result_type: _Optional[_Union[ResultType, str]] = ..., struct_result_field: _Optional[_Iterable[_Union[StructResultField, _Mapping]]] = ...) -> None: ...
 
 class FloatArray(_message.Message):
     __slots__ = ("values",)

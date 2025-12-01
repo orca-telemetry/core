@@ -292,6 +292,21 @@ export interface AlgorithmDependency {
   processorRuntime?: string | undefined;
 }
 
+export interface StructResultField {
+  /**
+   * Name of the struct result field
+   * Examples: "P50"
+   */
+  name?:
+    | string
+    | undefined;
+  /**
+   * Description of the field
+   * Examples: "50th percentile of signal"
+   */
+  description?: string | undefined;
+}
+
 /**
  * Algorithm defines a processing unit that can be executed by processors.
  * Algorithms form the nodes in the processing DAG and are triggered by specific window types.
@@ -330,7 +345,11 @@ export interface Algorithm {
    * The type of result that the algorithm produces. This is specified upfront
    * rather than introspected, to allow for validation
    */
-  resultType?: ResultType | undefined;
+  resultType?:
+    | ResultType
+    | undefined;
+  /** The result struct fields that are present. */
+  structResultField?: StructResultField[] | undefined;
 }
 
 /** Container for array of float values */
@@ -1280,8 +1299,84 @@ export const AlgorithmDependency: MessageFns<AlgorithmDependency> = {
   },
 };
 
+function createBaseStructResultField(): StructResultField {
+  return { name: "", description: "" };
+}
+
+export const StructResultField: MessageFns<StructResultField> = {
+  encode(message: StructResultField, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.name !== undefined && message.name !== "") {
+      writer.uint32(10).string(message.name);
+    }
+    if (message.description !== undefined && message.description !== "") {
+      writer.uint32(18).string(message.description);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): StructResultField {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseStructResultField();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.name = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): StructResultField {
+    return {
+      name: isSet(object.name) ? globalThis.String(object.name) : "",
+      description: isSet(object.description) ? globalThis.String(object.description) : "",
+    };
+  },
+
+  toJSON(message: StructResultField): unknown {
+    const obj: any = {};
+    if (message.name !== undefined && message.name !== "") {
+      obj.name = message.name;
+    }
+    if (message.description !== undefined && message.description !== "") {
+      obj.description = message.description;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<StructResultField>, I>>(base?: I): StructResultField {
+    return StructResultField.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<StructResultField>, I>>(object: I): StructResultField {
+    const message = createBaseStructResultField();
+    message.name = object.name ?? "";
+    message.description = object.description ?? "";
+    return message;
+  },
+};
+
 function createBaseAlgorithm(): Algorithm {
-  return { name: "", version: "", windowType: undefined, dependencies: [], resultType: 0 };
+  return { name: "", version: "", windowType: undefined, dependencies: [], resultType: 0, structResultField: [] };
 }
 
 export const Algorithm: MessageFns<Algorithm> = {
@@ -1302,6 +1397,11 @@ export const Algorithm: MessageFns<Algorithm> = {
     }
     if (message.resultType !== undefined && message.resultType !== 0) {
       writer.uint32(40).int32(message.resultType);
+    }
+    if (message.structResultField !== undefined && message.structResultField.length !== 0) {
+      for (const v of message.structResultField) {
+        StructResultField.encode(v!, writer.uint32(50).fork()).join();
+      }
     }
     return writer;
   },
@@ -1356,6 +1456,17 @@ export const Algorithm: MessageFns<Algorithm> = {
           message.resultType = reader.int32() as any;
           continue;
         }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          const el = StructResultField.decode(reader, reader.uint32());
+          if (el !== undefined) {
+            message.structResultField!.push(el);
+          }
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1374,6 +1485,9 @@ export const Algorithm: MessageFns<Algorithm> = {
         ? object.dependencies.map((e: any) => AlgorithmDependency.fromJSON(e))
         : [],
       resultType: isSet(object.resultType) ? resultTypeFromJSON(object.resultType) : 0,
+      structResultField: globalThis.Array.isArray(object?.structResultField)
+        ? object.structResultField.map((e: any) => StructResultField.fromJSON(e))
+        : [],
     };
   },
 
@@ -1394,6 +1508,9 @@ export const Algorithm: MessageFns<Algorithm> = {
     if (message.resultType !== undefined && message.resultType !== 0) {
       obj.resultType = resultTypeToJSON(message.resultType);
     }
+    if (message.structResultField?.length) {
+      obj.structResultField = message.structResultField.map((e) => StructResultField.toJSON(e));
+    }
     return obj;
   },
 
@@ -1409,6 +1526,7 @@ export const Algorithm: MessageFns<Algorithm> = {
       : undefined;
     message.dependencies = object.dependencies?.map((e) => AlgorithmDependency.fromPartial(e)) || [];
     message.resultType = object.resultType ?? 0;
+    message.structResultField = object.structResultField?.map((e) => StructResultField.fromPartial(e)) || [];
     return message;
   },
 };

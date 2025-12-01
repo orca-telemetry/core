@@ -185,6 +185,15 @@ enum ResultType {
   NONE = 4;
 }
 
+message StructResultField {
+  // Name of the struct result field 
+  // Examples: "P50"
+  string name = 1 [(buf.validate.field).required = true];
+  // Description of the field
+  // Examples: "50th percentile of signal"
+  string description = 2 [(buf.validate.field).required = true];
+}
+
 // Algorithm defines a processing unit that can be executed by processors.
 // Algorithms form the nodes in the processing DAG and are triggered by specific window types.
 message Algorithm {
@@ -207,7 +216,12 @@ message Algorithm {
   
   // The type of result that the algorithm produces. This is specified upfront
   // rather than introspected, to allow for validation
-  ResultType result_type = 5 [(buf.validate.field).required = true];  
+  ResultType result_type = 5 [(buf.validate.field).required = true];
+
+  // The result struct fields that are present.
+  // Should be checked against any stored algorithms of the same
+  // name, processor and version.
+  repeated StructResultField struct_result_field = 6;
 }
 
 // ResultStatus indicates the outcome of algorithm execution

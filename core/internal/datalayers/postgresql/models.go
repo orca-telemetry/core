@@ -84,6 +84,14 @@ type AlgorithmExecutionPath struct {
 	ProcIDPath       string
 }
 
+type AlgorithmStructResultField struct {
+	AlgorithmName         string
+	AlgorithmVersion      string
+	ProcessorName         string
+	ProcessorRuntime      string
+	StructResultFieldName string
+}
+
 // Plot annotations with time ranges and metadata
 type Annotation struct {
 	ID int64
@@ -136,6 +144,17 @@ type Result struct {
 	ResultValue  pgtype.Float8
 	ResultArray  []float64
 	ResultJson   []byte
+}
+
+type StructResultField struct {
+	ID          int64
+	Name        string
+	Description string
+}
+
+type StructResultFieldReference struct {
+	AlgorithmID         int64
+	StructResultFieldID int64
 }
 
 type Window struct {
