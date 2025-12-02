@@ -21,6 +21,7 @@ const _ = grpc.SupportPackageIsVersion9
 const (
 	OrcaCore_RegisterProcessor_FullMethodName = "/OrcaCore/RegisterProcessor"
 	OrcaCore_EmitWindow_FullMethodName        = "/OrcaCore/EmitWindow"
+	OrcaCore_Expose_FullMethodName            = "/OrcaCore/Expose"
 )
 
 // OrcaCoreClient is the client API for OrcaCore service.
@@ -37,6 +38,8 @@ type OrcaCoreClient interface {
 	RegisterProcessor(ctx context.Context, in *ProcessorRegistration, opts ...grpc.CallOption) (*Status, error)
 	// Submit a window for processing
 	EmitWindow(ctx context.Context, in *Window, opts ...grpc.CallOption) (*WindowEmitStatus, error)
+	// Expose the internal Orca state
+	Expose(ctx context.Context, in *ExposeSettings, opts ...grpc.CallOption) (*InternalState, error)
 }
 
 type orcaCoreClient struct {
@@ -67,6 +70,16 @@ func (c *orcaCoreClient) EmitWindow(ctx context.Context, in *Window, opts ...grp
 	return out, nil
 }
 
+func (c *orcaCoreClient) Expose(ctx context.Context, in *ExposeSettings, opts ...grpc.CallOption) (*InternalState, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(InternalState)
+	err := c.cc.Invoke(ctx, OrcaCore_Expose_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // OrcaCoreServer is the server API for OrcaCore service.
 // All implementations must embed UnimplementedOrcaCoreServer
 // for forward compatibility.
@@ -81,6 +94,8 @@ type OrcaCoreServer interface {
 	RegisterProcessor(context.Context, *ProcessorRegistration) (*Status, error)
 	// Submit a window for processing
 	EmitWindow(context.Context, *Window) (*WindowEmitStatus, error)
+	// Expose the internal Orca state
+	Expose(context.Context, *ExposeSettings) (*InternalState, error)
 	mustEmbedUnimplementedOrcaCoreServer()
 }
 
@@ -96,6 +111,9 @@ func (UnimplementedOrcaCoreServer) RegisterProcessor(context.Context, *Processor
 }
 func (UnimplementedOrcaCoreServer) EmitWindow(context.Context, *Window) (*WindowEmitStatus, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method EmitWindow not implemented")
+}
+func (UnimplementedOrcaCoreServer) Expose(context.Context, *ExposeSettings) (*InternalState, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Expose not implemented")
 }
 func (UnimplementedOrcaCoreServer) mustEmbedUnimplementedOrcaCoreServer() {}
 func (UnimplementedOrcaCoreServer) testEmbeddedByValue()                  {}
@@ -154,6 +172,24 @@ func _OrcaCore_EmitWindow_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _OrcaCore_Expose_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ExposeSettings)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrcaCoreServer).Expose(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrcaCore_Expose_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrcaCoreServer).Expose(ctx, req.(*ExposeSettings))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // OrcaCore_ServiceDesc is the grpc.ServiceDesc for OrcaCore service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -168,6 +204,10 @@ var OrcaCore_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "EmitWindow",
 			Handler:    _OrcaCore_EmitWindow_Handler,
+		},
+		{
+			MethodName: "Expose",
+			Handler:    _OrcaCore_Expose_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

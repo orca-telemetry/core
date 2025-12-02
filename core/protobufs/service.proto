@@ -19,6 +19,9 @@ service OrcaCore {
 
   // Submit a window for processing
   rpc EmitWindow(Window) returns (WindowEmitStatus);
+
+  // Expose the internal Orca state
+  rpc Expose(ExposeSettings) returns (InternalState);
 }
 
 // OrcaProcessor defines the interface that each processing node must implement.
@@ -35,6 +38,9 @@ service OrcaProcessor {
   // Check health/status of processor. i.e. a heartbeat
   rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
 }
+
+// ExposeSettings provides optional settings to the `Expose` procedure
+message ExposeSettings {}
 
 // Window represents a time-bounded processing context that triggers algorithm execution. Windows are the primary input that start DAG processing flows.
 message Window {
@@ -359,3 +365,10 @@ message ProcessorMetrics {
   int64 uptime_seconds = 4;
 }
 
+// InternalState provides a snapshot of the internal state of the Orca
+// instance.
+message InternalState {
+  // Provides the same structure that processors use to register algorithms - simply
+  // reverses the process.
+  repeated ProcessorRegistration processor_algorithms = 1;
+}

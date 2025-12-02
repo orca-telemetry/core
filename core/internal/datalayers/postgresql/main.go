@@ -75,7 +75,6 @@ func (d *Datalayer) RegisterProcessor(
 			for ii, field := range metadataFieldsAsStored {
 				metadataFieldNamesAsStored[ii] = field.GetName()
 			}
-
 			for _, metadataField := range windowType.MetadataFields {
 				if !slices.Contains(metadataFieldNamesAsStored, metadataField.GetName()) {
 					return fmt.Errorf(
@@ -257,4 +256,31 @@ func (d *Datalayer) EmitWindow(
 	return pb.WindowEmitStatus{
 		Status: pb.WindowEmitStatus_NO_TRIGGERED_ALGORITHMS,
 	}, nil
+}
+
+func (d *Datalayer) Expose(
+	ctx context.Context,
+	_ *pb.ExposeSettings,
+) (*pb.InternalState, error) {
+	// settings not handled for now
+
+	tx, err := d.WithTx(ctx)
+
+	defer func() {
+		if tx != nil {
+			tx.Rollback(ctx)
+		}
+	}()
+
+	if err != nil {
+		slog.Error("could not start a transaction", "error", err)
+		return nil, err
+	}
+
+	pgTx := tx.(*PgTx)
+
+	qtx := d.queries.WithTx(pgTx.tx)
+
+	return nil, nil
+
 }

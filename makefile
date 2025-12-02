@@ -49,11 +49,9 @@ export CGO_ENABLED = 0
 		--ts_proto_opt=outputClientImpl=true \
 		*.proto vendor/*.proto
 
-
 .datalayer:
 	sqlc vet -f core/internal/datalayers/postgresql/sqlc.yaml
 	sqlc generate -f core/internal/datalayers/postgresql/sqlc.yaml
-
 
 .stop_datalayer:
 	cd local_storage && docker-compose stop
