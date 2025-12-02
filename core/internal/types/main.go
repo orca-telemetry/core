@@ -19,6 +19,7 @@ type (
 		// Core level operations
 		RegisterProcessor(ctx context.Context, proc *pb.ProcessorRegistration) error
 		EmitWindow(ctx context.Context, window *pb.Window) (pb.WindowEmitStatus, error)
+		Expose(ctx context.Context, settings *pb.ExposeSettings) (*pb.InternalState, error)
 	}
 )
 

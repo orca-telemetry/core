@@ -133,6 +133,10 @@ export function resultStatusToJSON(object: ResultStatus): string {
   }
 }
 
+/** ExposeSettings provides optional settings to the `Expose` procedure */
+export interface ExposeSettings {
+}
+
 /** Window represents a time-bounded processing context that triggers algorithm execution. Windows are the primary input that start DAG processing flows. */
 export interface Window {
   /**
@@ -558,6 +562,61 @@ export interface ProcessorMetrics {
   /** Time since processor started in seconds */
   uptimeSeconds?: string | undefined;
 }
+
+/**
+ * InternalState provides a snapshot of the internal state of the Orca
+ * instance.
+ */
+export interface InternalState {
+  /**
+   * Provides the same structure that processors use to register algorithms - simply
+   * reverses the process.
+   */
+  processorAlgorithms?: ProcessorRegistration[] | undefined;
+}
+
+function createBaseExposeSettings(): ExposeSettings {
+  return {};
+}
+
+export const ExposeSettings: MessageFns<ExposeSettings> = {
+  encode(_: ExposeSettings, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExposeSettings {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExposeSettings();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(_: any): ExposeSettings {
+    return {};
+  },
+
+  toJSON(_: ExposeSettings): unknown {
+    const obj: any = {};
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ExposeSettings>, I>>(base?: I): ExposeSettings {
+    return ExposeSettings.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ExposeSettings>, I>>(_: I): ExposeSettings {
+    const message = createBaseExposeSettings();
+    return message;
+  },
+};
 
 function createBaseWindow(): Window {
   return {
@@ -2267,6 +2326,73 @@ export const ProcessorMetrics: MessageFns<ProcessorMetrics> = {
   },
 };
 
+function createBaseInternalState(): InternalState {
+  return { processorAlgorithms: [] };
+}
+
+export const InternalState: MessageFns<InternalState> = {
+  encode(message: InternalState, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.processorAlgorithms !== undefined && message.processorAlgorithms.length !== 0) {
+      for (const v of message.processorAlgorithms) {
+        ProcessorRegistration.encode(v!, writer.uint32(10).fork()).join();
+      }
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): InternalState {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseInternalState();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          const el = ProcessorRegistration.decode(reader, reader.uint32());
+          if (el !== undefined) {
+            message.processorAlgorithms!.push(el);
+          }
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): InternalState {
+    return {
+      processorAlgorithms: globalThis.Array.isArray(object?.processorAlgorithms)
+        ? object.processorAlgorithms.map((e: any) => ProcessorRegistration.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: InternalState): unknown {
+    const obj: any = {};
+    if (message.processorAlgorithms?.length) {
+      obj.processorAlgorithms = message.processorAlgorithms.map((e) => ProcessorRegistration.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<InternalState>, I>>(base?: I): InternalState {
+    return InternalState.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<InternalState>, I>>(object: I): InternalState {
+    const message = createBaseInternalState();
+    message.processorAlgorithms = object.processorAlgorithms?.map((e) => ProcessorRegistration.fromPartial(e)) || [];
+    return message;
+  },
+};
+
 /**
  * OrcaCore is the central orchestration service that:
  * - Manages the lifecycle of processing windows
@@ -2297,6 +2423,16 @@ export const OrcaCoreService = {
     responseSerialize: (value: WindowEmitStatus): Buffer => Buffer.from(WindowEmitStatus.encode(value).finish()),
     responseDeserialize: (value: Buffer): WindowEmitStatus => WindowEmitStatus.decode(value),
   },
+  /** Expose the internal Orca state */
+  expose: {
+    path: "/OrcaCore/Expose",
+    requestStream: false,
+    responseStream: false,
+    requestSerialize: (value: ExposeSettings): Buffer => Buffer.from(ExposeSettings.encode(value).finish()),
+    requestDeserialize: (value: Buffer): ExposeSettings => ExposeSettings.decode(value),
+    responseSerialize: (value: InternalState): Buffer => Buffer.from(InternalState.encode(value).finish()),
+    responseDeserialize: (value: Buffer): InternalState => InternalState.decode(value),
+  },
 } as const;
 
 export interface OrcaCoreServer extends UntypedServiceImplementation {
@@ -2304,6 +2440,8 @@ export interface OrcaCoreServer extends UntypedServiceImplementation {
   registerProcessor: handleUnaryCall<ProcessorRegistration, Status>;
   /** Submit a window for processing */
   emitWindow: handleUnaryCall<Window, WindowEmitStatus>;
+  /** Expose the internal Orca state */
+  expose: handleUnaryCall<ExposeSettings, InternalState>;
 }
 
 export interface OrcaCoreClient extends Client {
@@ -2338,6 +2476,22 @@ export interface OrcaCoreClient extends Client {
     metadata: Metadata,
     options: Partial<CallOptions>,
     callback: (error: ServiceError | null, response: WindowEmitStatus) => void,
+  ): ClientUnaryCall;
+  /** Expose the internal Orca state */
+  expose(
+    request: ExposeSettings,
+    callback: (error: ServiceError | null, response: InternalState) => void,
+  ): ClientUnaryCall;
+  expose(
+    request: ExposeSettings,
+    metadata: Metadata,
+    callback: (error: ServiceError | null, response: InternalState) => void,
+  ): ClientUnaryCall;
+  expose(
+    request: ExposeSettings,
+    metadata: Metadata,
+    options: Partial<CallOptions>,
+    callback: (error: ServiceError | null, response: InternalState) => void,
   ): ClientUnaryCall;
 }
 

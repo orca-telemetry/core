@@ -50,6 +50,11 @@ class OrcaCoreStub(object):
                 request_serializer=service__pb2.Window.SerializeToString,
                 response_deserializer=service__pb2.WindowEmitStatus.FromString,
                 _registered_method=True)
+        self.Expose = channel.unary_unary(
+                '/OrcaCore/Expose',
+                request_serializer=service__pb2.ExposeSettings.SerializeToString,
+                response_deserializer=service__pb2.InternalState.FromString,
+                _registered_method=True)
 
 
 class OrcaCoreServicer(object):
@@ -75,6 +80,13 @@ class OrcaCoreServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def Expose(self, request, context):
+        """Expose the internal Orca state
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_OrcaCoreServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -87,6 +99,11 @@ def add_OrcaCoreServicer_to_server(servicer, server):
                     servicer.EmitWindow,
                     request_deserializer=service__pb2.Window.FromString,
                     response_serializer=service__pb2.WindowEmitStatus.SerializeToString,
+            ),
+            'Expose': grpc.unary_unary_rpc_method_handler(
+                    servicer.Expose,
+                    request_deserializer=service__pb2.ExposeSettings.FromString,
+                    response_serializer=service__pb2.InternalState.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -149,6 +166,33 @@ class OrcaCore(object):
             '/OrcaCore/EmitWindow',
             service__pb2.Window.SerializeToString,
             service__pb2.WindowEmitStatus.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Expose(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/OrcaCore/Expose',
+            service__pb2.ExposeSettings.SerializeToString,
+            service__pb2.InternalState.FromString,
             options,
             channel_credentials,
             insecure,

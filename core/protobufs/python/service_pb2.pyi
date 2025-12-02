@@ -31,6 +31,10 @@ RESULT_STATUS_HANDLED_FAILED: ResultStatus
 RESULT_STATUS_UNHANDLED_FAILED: ResultStatus
 RESULT_STATUS_SUCEEDED: ResultStatus
 
+class ExposeSettings(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
 class Window(_message.Message):
     __slots__ = ("time_from", "time_to", "window_type_name", "window_type_version", "origin", "metadata")
     TIME_FROM_FIELD_NUMBER: _ClassVar[int]
@@ -224,3 +228,9 @@ class ProcessorMetrics(_message.Message):
     cpu_percent: float
     uptime_seconds: int
     def __init__(self, active_tasks: _Optional[int] = ..., memory_bytes: _Optional[int] = ..., cpu_percent: _Optional[float] = ..., uptime_seconds: _Optional[int] = ...) -> None: ...
+
+class InternalState(_message.Message):
+    __slots__ = ("processor_algorithms",)
+    PROCESSOR_ALGORITHMS_FIELD_NUMBER: _ClassVar[int]
+    processor_algorithms: _containers.RepeatedCompositeFieldContainer[ProcessorRegistration]
+    def __init__(self, processor_algorithms: _Optional[_Iterable[_Union[ProcessorRegistration, _Mapping]]] = ...) -> None: ...
