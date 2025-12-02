@@ -50,7 +50,7 @@ func startPostgres(networkName string) {
 			"-e",
 			"POSTGRES_DB=orca",
 			"-v",
-			volumeName + ":/var/lib/postgresql/data",
+			volumeName + ":/var/lib/postgresql",
 			"postgres",
 		}
 
