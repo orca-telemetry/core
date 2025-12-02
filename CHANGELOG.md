@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [unreleased]
 
+## [v0.10.2] - 02-12-2025
+
+### Fixed
+
+- Volume configuration within the Orca CLI to be compatible with PostgreSQL 18
+
 ## [v0.10.1] - 28-09-2025
 
 ### Changed
