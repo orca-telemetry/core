@@ -3,8 +3,6 @@ name: CD
 on:
   pull_request:
     branches: ["release/*"]
-    paths-ignore:
-      - "**/**.md"
 
 jobs:
   build:
