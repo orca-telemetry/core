@@ -70,12 +70,14 @@ window_type_id AS (
 INSERT INTO algorithm (
   name,
   version,
+  description,
   processor_id,
   window_type_id,
   result_type
 ) VALUES (
   sqlc.arg('name'),
   sqlc.arg('version'),
+  sqlc.arg('description'),
   (SELECT id FROM processor_id),
   (SELECT id FROM window_type_id),
   sqlc.arg('result_type')
@@ -86,6 +88,13 @@ SELECT a.* FROM algorithm a
 JOIN window_type wt ON a.window_type_id = wt.id
 WHERE wt.name = sqlc.arg('window_type_name') 
 AND wt.version = sqlc.arg('window_type_version');
+
+-- name: ReadAlgorithms :many
+SELECT a.* FROM algorithm a;
+
+-- name: ReadAlgorithmsForProcessorId :many
+SELECT a.* FROM algorithm a
+WHERE a.processor_id = sqlc.arg('processor_id');
 
 -- name: CreateAlgorithmDependency :exec
 WITH from_algo AS (
@@ -152,6 +161,9 @@ SELECT aep.* FROM algorithm_execution_paths aep WHERE aep.window_type_id_path ~ 
 
 -- name: ReadAlgorithmExecutionPathsForAlgo :many
 SELECT aep.* FROM algorithm_execution_paths aep WHERE aep.final_algo_id=sqlc.arg('algo_id');
+
+-- name: ReadWindowTypes :many
+SELECT wt.* FROM window_type wt;
 
 -- name: RegisterWindow :one
 WITH window_type_id AS (

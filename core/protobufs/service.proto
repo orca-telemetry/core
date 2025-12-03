@@ -198,6 +198,12 @@ message Algorithm {
   // The type of result that the algorithm produces. This is specified upfront
   // rather than introspected, to allow for validation
   ResultType result_type = 5 [(buf.validate.field).required = true];  
+
+  // A freeform description of the algorithm
+  string description = 6 [
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.max_len = 1000
+  ];
 }
 
 // ResultStatus indicates the outcome of algorithm execution
@@ -370,5 +376,5 @@ message ProcessorMetrics {
 message InternalState {
   // Provides the same structure that processors use to register algorithms - simply
   // reverses the process.
-  repeated ProcessorRegistration processor_algorithms = 1;
+  repeated Algorithm algorithms = 1;
 }

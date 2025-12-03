@@ -102,3 +102,16 @@ func (o *OrcaCoreServer) EmitWindow(
 	windowEmitStatus, err := o.client.EmitWindow(ctx, window)
 	return &windowEmitStatus, err
 }
+
+func (o *OrcaCoreServer) Expose(
+	ctx context.Context,
+	settings *pb.ExposeSettings,
+) (*pb.InternalState, error) {
+	slog.Debug("recieved request to expose internal state", "settings", settings)
+	err := validate(settings)
+	if err != nil {
+		return nil, err
+	}
+	internalState, err := o.client.Expose(ctx, settings)
+	return internalState, err
+}
