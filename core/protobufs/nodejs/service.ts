@@ -334,7 +334,11 @@ export interface Algorithm {
    * The type of result that the algorithm produces. This is specified upfront
    * rather than introspected, to allow for validation
    */
-  resultType?: ResultType | undefined;
+  resultType?:
+    | ResultType
+    | undefined;
+  /** A freeform description of the algorithm */
+  description?: string | undefined;
 }
 
 /** Container for array of float values */
@@ -572,7 +576,7 @@ export interface InternalState {
    * Provides the same structure that processors use to register algorithms - simply
    * reverses the process.
    */
-  processorAlgorithms?: ProcessorRegistration[] | undefined;
+  algorithms?: Algorithm[] | undefined;
 }
 
 function createBaseExposeSettings(): ExposeSettings {
@@ -1123,7 +1127,7 @@ export const AlgorithmDependency: MessageFns<AlgorithmDependency> = {
 };
 
 function createBaseAlgorithm(): Algorithm {
-  return { name: "", version: "", windowType: undefined, dependencies: [], resultType: 0 };
+  return { name: "", version: "", windowType: undefined, dependencies: [], resultType: 0, description: "" };
 }
 
 export const Algorithm: MessageFns<Algorithm> = {
@@ -1144,6 +1148,9 @@ export const Algorithm: MessageFns<Algorithm> = {
     }
     if (message.resultType !== undefined && message.resultType !== 0) {
       writer.uint32(40).int32(message.resultType);
+    }
+    if (message.description !== undefined && message.description !== "") {
+      writer.uint32(50).string(message.description);
     }
     return writer;
   },
@@ -1198,6 +1205,14 @@ export const Algorithm: MessageFns<Algorithm> = {
           message.resultType = reader.int32() as any;
           continue;
         }
+        case 6: {
+          if (tag !== 50) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1216,6 +1231,7 @@ export const Algorithm: MessageFns<Algorithm> = {
         ? object.dependencies.map((e: any) => AlgorithmDependency.fromJSON(e))
         : [],
       resultType: isSet(object.resultType) ? resultTypeFromJSON(object.resultType) : 0,
+      description: isSet(object.description) ? globalThis.String(object.description) : "",
     };
   },
 
@@ -1236,6 +1252,9 @@ export const Algorithm: MessageFns<Algorithm> = {
     if (message.resultType !== undefined && message.resultType !== 0) {
       obj.resultType = resultTypeToJSON(message.resultType);
     }
+    if (message.description !== undefined && message.description !== "") {
+      obj.description = message.description;
+    }
     return obj;
   },
 
@@ -1251,6 +1270,7 @@ export const Algorithm: MessageFns<Algorithm> = {
       : undefined;
     message.dependencies = object.dependencies?.map((e) => AlgorithmDependency.fromPartial(e)) || [];
     message.resultType = object.resultType ?? 0;
+    message.description = object.description ?? "";
     return message;
   },
 };
@@ -2327,14 +2347,14 @@ export const ProcessorMetrics: MessageFns<ProcessorMetrics> = {
 };
 
 function createBaseInternalState(): InternalState {
-  return { processorAlgorithms: [] };
+  return { algorithms: [] };
 }
 
 export const InternalState: MessageFns<InternalState> = {
   encode(message: InternalState, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.processorAlgorithms !== undefined && message.processorAlgorithms.length !== 0) {
-      for (const v of message.processorAlgorithms) {
-        ProcessorRegistration.encode(v!, writer.uint32(10).fork()).join();
+    if (message.algorithms !== undefined && message.algorithms.length !== 0) {
+      for (const v of message.algorithms) {
+        Algorithm.encode(v!, writer.uint32(10).fork()).join();
       }
     }
     return writer;
@@ -2352,9 +2372,9 @@ export const InternalState: MessageFns<InternalState> = {
             break;
           }
 
-          const el = ProcessorRegistration.decode(reader, reader.uint32());
+          const el = Algorithm.decode(reader, reader.uint32());
           if (el !== undefined) {
-            message.processorAlgorithms!.push(el);
+            message.algorithms!.push(el);
           }
           continue;
         }
@@ -2369,16 +2389,16 @@ export const InternalState: MessageFns<InternalState> = {
 
   fromJSON(object: any): InternalState {
     return {
-      processorAlgorithms: globalThis.Array.isArray(object?.processorAlgorithms)
-        ? object.processorAlgorithms.map((e: any) => ProcessorRegistration.fromJSON(e))
+      algorithms: globalThis.Array.isArray(object?.algorithms)
+        ? object.algorithms.map((e: any) => Algorithm.fromJSON(e))
         : [],
     };
   },
 
   toJSON(message: InternalState): unknown {
     const obj: any = {};
-    if (message.processorAlgorithms?.length) {
-      obj.processorAlgorithms = message.processorAlgorithms.map((e) => ProcessorRegistration.toJSON(e));
+    if (message.algorithms?.length) {
+      obj.algorithms = message.algorithms.map((e) => Algorithm.toJSON(e));
     }
     return obj;
   },
@@ -2388,7 +2408,7 @@ export const InternalState: MessageFns<InternalState> = {
   },
   fromPartial<I extends Exact<DeepPartial<InternalState>, I>>(object: I): InternalState {
     const message = createBaseInternalState();
-    message.processorAlgorithms = object.processorAlgorithms?.map((e) => ProcessorRegistration.fromPartial(e)) || [];
+    message.algorithms = object.algorithms?.map((e) => Algorithm.fromPartial(e)) || [];
     return message;
   },
 };

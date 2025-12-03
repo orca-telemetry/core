@@ -281,6 +281,67 @@ func (d *Datalayer) Expose(
 
 	qtx := d.queries.WithTx(pgTx.tx)
 
-	return nil, nil
+	// read all the algorithms
+	algorithms, err := qtx.ReadAlgorithms(ctx)
+	if err != nil {
+		slog.Error("could not read algorithms", "error", err)
+		return nil, fmt.Errorf("could not read algorithms: %w", err)
+	}
+	algosMap := make(map[int]Algorithm, len(algorithms))
+	for ii, algo := range algorithms {
+		// pack 'em into the map
+		algosMap[ii] = algo
+	}
+
+	// get read all the window types
+	wts, err := qtx.ReadWindowTypes(ctx)
+	if err != nil {
+		slog.Error("could not read window types", "error", err)
+		return nil, fmt.Errorf("could not read window types: %w", err)
+	}
+	wtsMap := make(map[int64]WindowType, len(wts))
+	for _, wt := range wts {
+		wtsMap[wt.ID] = wt
+	}
+
+	algorithmsPb := make([]*pb.Algorithm, len(algorithms))
+	for jj, algo := range algorithms {
+		// get the window type for this algorithm
+		wt, ok := wtsMap[algo.WindowTypeID]
+		if !ok {
+			slog.Error("could not find the window type id, which algorithm depends on", "window_type_id", algo.WindowTypeID, "algorithm_id", algo.ID)
+			return nil, fmt.Errorf("could not find the window type that algorithm %v, depends on", algo.Name)
+		}
+		// parse out the result type
+		var resultType pb.ResultType
+		switch algo.ResultType {
+		case ResultTypeStruct:
+			resultType = pb.ResultType_STRUCT
+		case ResultTypeValue:
+			resultType = pb.ResultType_VALUE
+		case ResultTypeNone:
+			resultType = pb.ResultType_NONE
+		case ResultTypeArray:
+			resultType = pb.ResultType_ARRAY
+		default:
+			resultType = pb.ResultType_NOT_SPECIFIED
+		}
+
+		algorithmsPb[jj] = &pb.Algorithm{
+			Name:    algo.Name,
+			Version: algo.Version,
+			WindowType: &pb.WindowType{
+				Name:        wt.Name,
+				Version:     wt.Version,
+				Description: wt.Description,
+			},
+			ResultType:  resultType,
+			Description: algo.Description,
+		}
+	}
+
+	return &pb.InternalState{
+		Algorithms: algorithmsPb,
+	}, nil
 
 }

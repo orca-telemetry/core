@@ -98,18 +98,20 @@ class AlgorithmDependency(_message.Message):
     def __init__(self, name: _Optional[str] = ..., version: _Optional[str] = ..., processor_name: _Optional[str] = ..., processor_runtime: _Optional[str] = ...) -> None: ...
 
 class Algorithm(_message.Message):
-    __slots__ = ("name", "version", "window_type", "dependencies", "result_type")
+    __slots__ = ("name", "version", "window_type", "dependencies", "result_type", "description")
     NAME_FIELD_NUMBER: _ClassVar[int]
     VERSION_FIELD_NUMBER: _ClassVar[int]
     WINDOW_TYPE_FIELD_NUMBER: _ClassVar[int]
     DEPENDENCIES_FIELD_NUMBER: _ClassVar[int]
     RESULT_TYPE_FIELD_NUMBER: _ClassVar[int]
+    DESCRIPTION_FIELD_NUMBER: _ClassVar[int]
     name: str
     version: str
     window_type: WindowType
     dependencies: _containers.RepeatedCompositeFieldContainer[AlgorithmDependency]
     result_type: ResultType
-    def __init__(self, name: _Optional[str] = ..., version: _Optional[str] = ..., window_type: _Optional[_Union[WindowType, _Mapping]] = ..., dependencies: _Optional[_Iterable[_Union[AlgorithmDependency, _Mapping]]] = ..., result_type: _Optional[_Union[ResultType, str]] = ...) -> None: ...
+    description: str
+    def __init__(self, name: _Optional[str] = ..., version: _Optional[str] = ..., window_type: _Optional[_Union[WindowType, _Mapping]] = ..., dependencies: _Optional[_Iterable[_Union[AlgorithmDependency, _Mapping]]] = ..., result_type: _Optional[_Union[ResultType, str]] = ..., description: _Optional[str] = ...) -> None: ...
 
 class FloatArray(_message.Message):
     __slots__ = ("values",)
@@ -230,7 +232,7 @@ class ProcessorMetrics(_message.Message):
     def __init__(self, active_tasks: _Optional[int] = ..., memory_bytes: _Optional[int] = ..., cpu_percent: _Optional[float] = ..., uptime_seconds: _Optional[int] = ...) -> None: ...
 
 class InternalState(_message.Message):
-    __slots__ = ("processor_algorithms",)
-    PROCESSOR_ALGORITHMS_FIELD_NUMBER: _ClassVar[int]
-    processor_algorithms: _containers.RepeatedCompositeFieldContainer[ProcessorRegistration]
-    def __init__(self, processor_algorithms: _Optional[_Iterable[_Union[ProcessorRegistration, _Mapping]]] = ...) -> None: ...
+    __slots__ = ("algorithms",)
+    ALGORITHMS_FIELD_NUMBER: _ClassVar[int]
+    algorithms: _containers.RepeatedCompositeFieldContainer[Algorithm]
+    def __init__(self, algorithms: _Optional[_Iterable[_Union[Algorithm, _Mapping]]] = ...) -> None: ...

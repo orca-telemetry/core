@@ -63,6 +63,7 @@ type Algorithm struct {
 	WindowTypeID int64
 	ResultType   ResultType
 	Created      pgtype.Timestamp
+	Description  string
 }
 
 type AlgorithmDependency struct {

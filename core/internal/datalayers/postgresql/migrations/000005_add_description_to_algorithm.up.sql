@@ -1,0 +1,1 @@
+ALTER TABLE algorithm ADD COLUMN description TEXT NOT NULL DEFAULT ''; 

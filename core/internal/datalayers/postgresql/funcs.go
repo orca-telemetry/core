@@ -174,21 +174,23 @@ func (d *Datalayer) addAlgorithm(
 
 	// create algos
 	var resultType ResultType
-	if algo.GetResultType() == pb.ResultType_ARRAY {
+	switch algo.GetResultType() {
+	case pb.ResultType_ARRAY:
 		resultType = ResultTypeArray
-	} else if algo.GetResultType() == pb.ResultType_VALUE {
-		resultType = ResultTypeValue
-	} else if algo.GetResultType() == pb.ResultType_STRUCT {
+	case pb.ResultType_STRUCT:
 		resultType = ResultTypeStruct
-	} else if algo.GetResultType() == pb.ResultType_NONE {
+	case pb.ResultType_VALUE:
+		resultType = ResultTypeValue
+	case pb.ResultType_NONE:
 		resultType = ResultTypeNone
-	} else {
+	default:
 		return fmt.Errorf("result type %v not supported", algo.GetResultType())
 	}
 
 	params := CreateAlgorithmParams{
 		Name:              algo.GetName(),
 		Version:           algo.GetVersion(),
+		Description:       algo.GetDescription(),
 		ProcessorName:     proc.GetName(),
 		ProcessorRuntime:  proc.GetRuntime(),
 		WindowTypeName:    algo.GetWindowType().GetName(),
