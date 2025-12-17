@@ -1,0 +1,52 @@
+import time
+
+from orca_python import (
+    Processor,
+    WindowType,
+    StructResult,
+    MetadataField,
+    ExecutionParams,
+)
+
+proc = Processor("{{ .Name }}")
+
+# --- Metadata Fields ---
+{{ range .Metadata -}}
+{{ .VarName }} = MetadataField(
+    _stub=True
+    name="{{ .KeyName }}", 
+    description="{{ .Description }}"
+)
+{{ end }}
+
+# --- Window Types ---
+{{ range .Windows -}}
+{{ .VarName }} = WindowType(
+    _stub=True
+    name="{{ .Name }}",
+    version="{{ .Version }}",
+    description="{{ .Description }}",
+    metadataFields=[{{ range $i, $m := .MetadataVarNames }}{{ if $i }}, {{ end }}{{ $m }}{{ end }}],
+)
+{{- end }}
+
+# --- Algorithms ---
+{{ range .Algorithms -}}
+@proc.algorithm("{{ .Name }}", "{{ .Version }}", {{ .WindowVarName }})
+def {{ .SnakeName }}(params: ExecutionParams) -> StructResult:
+    """
+    Generated stub for {{ .Name }}
+    """
+    {{- /* We can dynamically extract the metadata keys based on the associated window */ -}}
+    {{- range .MetadataKeys }}
+    {{ .VarName }} = params.window.metadata.get("{{ .KeyName }}", None)
+    {{- end }}
+    
+    # TODO: Implement logic for {{ .Name }}
+    return StructResult({"status": "success"})
+
+{{ end }}
+
+if __name__ == "__main__":
+    proc.Register()
+    proc.Start()
