@@ -7,10 +7,11 @@ import (
 	"log/slog"
 	"net"
 	"os"
+	"slices"
 	"strings"
 
-	dlyrs "github.com/orc-analytics/orca/core/internal/datalayers"
-	envs "github.com/orc-analytics/orca/core/internal/envs"
+	dlyrs "github.com/orc-analytics/orca/internal/datalayers"
+	envs "github.com/orc-analytics/orca/internal/envs"
 )
 
 type cliFlags struct {
@@ -51,10 +52,8 @@ func ValidateDatalayer(s string) error {
 	if s == "" {
 		return fmt.Errorf("platform cannot be determined from connection string")
 	}
-	for _, v := range datalayerSuggestions {
-		if s == v {
-			return nil
-		}
+	if slices.Contains(datalayerSuggestions, s) {
+		return nil
 	}
 	return fmt.Errorf("unsupported datalayer: %s", s)
 }
@@ -96,10 +95,8 @@ func ValidateLogLevel(s string) error {
 	}
 
 	s = strings.ToUpper(s)
-	for _, level := range logLevels {
-		if s == level {
-			return nil
-		}
+	if slices.Contains(logLevels, s) {
+		return nil
 	}
 	return fmt.Errorf("invalid log level: %s. Must be one of: %s", s, strings.Join(logLevels, ", "))
 }
