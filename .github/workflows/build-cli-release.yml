@@ -22,9 +22,6 @@ jobs:
       - name: Install Make
         run: sudo apt-get update && sudo apt-get install -y make
 
-      - name: Build all CLI binaries
-        run: make build_cli_all
-
       - name: Determine version and prerelease
         id: version_check
         run: |
@@ -47,10 +44,10 @@ jobs:
           prerelease: ${{ steps.version_check.outputs.IS_PRERELEASE }}
           generate_release_notes: true
           files: |
-            build/orca-cli-linux
-            build/orca-cli-windows.exe
-            build/orca-cli-mac-arm
-            build/orca-cli-mac-intel
+            build/orca-amd64-linux
+            build/orca-amd64-windows.exe
+            build/orca-amd64-mac-arm
+            build/orca-amd64-mac-intel
         env:
           GITHUB_TOKEN: ${{ secrets.PAT }}
 
@@ -61,12 +58,12 @@ jobs:
       - name: Build Docker image
         if: steps.version_check.outputs.IS_PRERELEASE == 'false'
         run: |
-          docker build -t ghcr.io/orc-analytics/orca:${{ env.VERSION }} \
-                       -t ghcr.io/orc-analytics/orca:latest \
-                       -f ./core/Dockerfile .
+          docker build -t ghcr.io/orc-analytics/core:${{ env.VERSION }} \
+                       -t ghcr.io/orc-analytics/core:latest \
+                       -f ./Dockerfile .
 
       - name: Push Docker image
         if: steps.version_check.outputs.IS_PRERELEASE == 'false'
         run: |
-          docker push ghcr.io/orc-analytics/orca:${{ env.VERSION }}
-          docker push ghcr.io/orc-analytics/orca:latest
+          docker push ghcr.io/orc-analytics/core:${{ env.VERSION }}
+          docker push ghcr.io/orc-analytics/core:latest
