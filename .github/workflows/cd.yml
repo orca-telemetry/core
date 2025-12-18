@@ -1,7 +1,7 @@
 name: CD
 
 on:
-  pull_request:
+  push:
     branches: ["release/*"]
 
 jobs:
@@ -21,8 +21,5 @@ jobs:
       - name: Test
         run: make test
 
-      - name: Build CLI
-        run: make build_cli_all
-
       - name: Build Core
-        run: make build_core_all
+        run: make build_all
