@@ -6,7 +6,7 @@ COPY core/go.mod core/go.sum ./
 
 RUN go mod tidy
 
-COPY core/ ./
+COPY / ./
 
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "-v -w" -o orca .
 

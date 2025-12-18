@@ -1,0 +1,11 @@
+.git
+.github
+.vscode
+build
+local_storage
+.gitignore
+CHANGELOG.md
+CONTRIBUTING.md
+DEVELOPING.md
+README.md
+orca
