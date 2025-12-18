@@ -202,15 +202,8 @@ INSERT INTO results (
   sqlc.arg('result_json')
 ) RETURNING id;
 
--- name: ReadAllProcessors :many
-SELECT 
-  id,
-  name,
-  runtime,
-  connection_string,
-  created
-FROM processor
-ORDER BY name, runtime;
+-- name: ReadProcessors :many
+SELECT * FROM processor;
 
 -- name: ReadProcessorsByIDs :many
 SELECT 
@@ -233,3 +226,8 @@ WHERE window_type_name = sqlc.arg('window_type_name')
   AND window_type_version = sqlc.arg('window_type_version')
 ORDER BY metadata_field_name;
 
+-- name: ReadMetadataFields :many
+SELECT * FROM metadata_fields;
+
+-- name: ReadWindowTypeMetadataFields :many
+SELECT * FROM window_type_metadata_fields;

@@ -476,43 +476,6 @@ func (q *Queries) ReadAlgorithmsForWindow(ctx context.Context, arg ReadAlgorithm
 	return items, nil
 }
 
-const readAllProcessors = `-- name: ReadAllProcessors :many
-SELECT 
-  id,
-  name,
-  runtime,
-  connection_string,
-  created
-FROM processor
-ORDER BY name, runtime
-`
-
-func (q *Queries) ReadAllProcessors(ctx context.Context) ([]Processor, error) {
-	rows, err := q.db.Query(ctx, readAllProcessors)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Processor
-	for rows.Next() {
-		var i Processor
-		if err := rows.Scan(
-			&i.ID,
-			&i.Name,
-			&i.Runtime,
-			&i.ConnectionString,
-			&i.Created,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
-}
-
 const readFromAlgorithmDependencies = `-- name: ReadFromAlgorithmDependencies :many
 WITH from_algo AS (
   SELECT a.id, a.window_type_id, a.processor_id FROM algorithm a
@@ -566,6 +529,30 @@ func (q *Queries) ReadFromAlgorithmDependencies(ctx context.Context, arg ReadFro
 	return items, nil
 }
 
+const readMetadataFields = `-- name: ReadMetadataFields :many
+SELECT id, name, description FROM metadata_fields
+`
+
+func (q *Queries) ReadMetadataFields(ctx context.Context) ([]MetadataField, error) {
+	rows, err := q.db.Query(ctx, readMetadataFields)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []MetadataField
+	for rows.Next() {
+		var i MetadataField
+		if err := rows.Scan(&i.ID, &i.Name, &i.Description); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const readMetadataFieldsByWindowType = `-- name: ReadMetadataFieldsByWindowType :many
 SELECT 
     metadata_field_id,
@@ -608,6 +595,36 @@ func (q *Queries) ReadMetadataFieldsByWindowType(ctx context.Context, arg ReadMe
 	return items, nil
 }
 
+const readProcessors = `-- name: ReadProcessors :many
+SELECT id, name, runtime, connection_string, created FROM processor
+`
+
+func (q *Queries) ReadProcessors(ctx context.Context) ([]Processor, error) {
+	rows, err := q.db.Query(ctx, readProcessors)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Processor
+	for rows.Next() {
+		var i Processor
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Runtime,
+			&i.ConnectionString,
+			&i.Created,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const readProcessorsByIDs = `-- name: ReadProcessorsByIDs :many
 SELECT 
   id,
@@ -635,6 +652,36 @@ func (q *Queries) ReadProcessorsByIDs(ctx context.Context, processorIds []int64)
 			&i.Runtime,
 			&i.ConnectionString,
 			&i.Created,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const readWindowTypeMetadataFields = `-- name: ReadWindowTypeMetadataFields :many
+SELECT window_type_name, window_type_version, metadata_field_id, metadata_field_name, metadata_field_description FROM window_type_metadata_fields
+`
+
+func (q *Queries) ReadWindowTypeMetadataFields(ctx context.Context) ([]WindowTypeMetadataField, error) {
+	rows, err := q.db.Query(ctx, readWindowTypeMetadataFields)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []WindowTypeMetadataField
+	for rows.Next() {
+		var i WindowTypeMetadataField
+		if err := rows.Scan(
+			&i.WindowTypeName,
+			&i.WindowTypeVersion,
+			&i.MetadataFieldID,
+			&i.MetadataFieldName,
+			&i.MetadataFieldDescription,
 		); err != nil {
 			return nil, err
 		}
