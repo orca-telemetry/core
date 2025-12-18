@@ -34,3 +34,4 @@ cli
 local_storage
 __pycache__
 build/
+dist
