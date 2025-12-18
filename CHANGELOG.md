@@ -8,7 +8,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [unreleased]
 
 ### Added
+
 - Added a gRPC procedure to expose the internal state of Orca (Window types and Algorithms)
+
+### Removed
+
+- The CLI into it's own repository.
 
 ## [v0.10.2] - 02-12-2025
 
