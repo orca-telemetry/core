@@ -1,11 +1,37 @@
 package stub
 
 import (
-	"html/template"
+	"embed"
 	"os"
+	"path/filepath"
+	"text/template"
 
 	pb "github.com/orc-analytics/orca/core/protobufs/go"
 )
+
+const PYTHON_STUB_FILE = "stub_templates/processor.py.tmpl"
+
+//go:embed stub_templates/*.tmpl
+var templateFS embed.FS
+
+var pythonTemplate *template.Template
+
+type pythonReturnType string
+
+const (
+	pythonStructReturnType pythonReturnType = "StructResult"
+	pythonValueReturnType  pythonReturnType = "ValueResult"
+	pythonNoneReturnType   pythonReturnType = "NoneResult"
+	pythonArrayReturnType  pythonReturnType = "ArrayResult"
+)
+
+func init() {
+	baseName := filepath.Base(PYTHON_STUB_FILE)
+	pythonTemplate = template.Must(template.New(baseName).Funcs(
+		template.FuncMap{
+			"ToSnakeCase": toSnakeCase,
+		}).ParseFS(templateFS, PYTHON_STUB_FILE))
+}
 
 func toSnakeCase(s string) string {
 	var result []rune
@@ -46,7 +72,7 @@ type Algorithm struct {
 	Name          string
 	Version       string
 	WindowVarName string
-	SnakeName     string
+	ReturnType    pythonReturnType
 	MetadataKeys  []AlgoMetadata
 }
 
@@ -59,12 +85,7 @@ type ProcessorData struct {
 
 func GeneratePythonStub(internalState *pb.InternalState, outDir string) error {
 
-	// load template from file with custom functions
-	tmpl := template.Must(template.New("./stub_templates/python.tmpl").Funcs(template.FuncMap{
-		"ToSnakeCase": toSnakeCase,
-	}).ParseFiles("./stub_templates/python.tmpl"))
-
-	outFile, err := os.Create("system_state.py")
+	outFile, err := os.Create("orca_stub.py")
 
 	if err != nil && !os.IsExist(err) {
 		return err
@@ -77,7 +98,7 @@ func GeneratePythonStub(internalState *pb.InternalState, outDir string) error {
 	if err != nil && !os.IsExist(err) {
 		return (err)
 	}
-	if err := tmpl.Execute(outFile, internalState); err != nil {
+	if err := pythonTemplate.Execute(outFile, internalState); err != nil {
 		panic(err)
 	}
 	println("Generated system_state.py successfully!")
