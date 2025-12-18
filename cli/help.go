@@ -68,6 +68,7 @@ func showCommandHelp(command string) {
 		fmt.Println(infoStyle.Render("  orca stub js"))
 		fmt.Println(infoStyle.Render("  orca stub python"))
 		fmt.Println(infoStyle.Render("  orca stub python -out ./my-orca-project/stubs"))
+		fmt.Println(infoStyle.Render(`  orca stub python -connStr "localhost:5443"`))
 	default:
 		fmt.Println(errorStyle.Render(fmt.Sprintf("Unknown command: %s", command)))
 		showHelp()

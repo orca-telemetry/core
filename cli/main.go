@@ -115,7 +115,7 @@ func main() {
 
 		sdkLanguage := args[sdkIndex]
 
-		// Remove the SDK language from args and parse the rest as flags
+		// remove the SDK language from args and parse the rest as flags
 		flagArgs := append(args[:sdkIndex], args[sdkIndex+1:]...)
 		stubCmd.Parse(flagArgs)
 
