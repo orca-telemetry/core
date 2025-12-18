@@ -5,21 +5,45 @@ on:
     branches: ["release/*"]
 
 jobs:
-  build:
+  build-and-release-rc:
+    name: Build and Release RC
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version from branch
+        id: version
+        run: |
+          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+          VERSION=$(echo $BRANCH_NAME | sed 's/release\/v//')
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          RC_VERSION="${VERSION}+rc.${SHORT_SHA}"
+          TAG_NAME="v${RC_VERSION}"
+          
+          echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
 
       - name: Set up Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: "1.24"
 
-      - name: Install Make
-        run: sudo apt-get update && sudo apt-get install -y make
+      - name: Create RC tag
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git tag -a ${{ env.TAG_NAME }} -m "Release candidate ${{ env.TAG_NAME }}"
+          git push origin ${{ env.TAG_NAME }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Test
-        run: make test
-
-      - name: Build Core
-        run: make build_all
+      - name: Run GoReleaser (snapshot for RC)
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
