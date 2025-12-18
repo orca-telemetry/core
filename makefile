@@ -23,19 +23,19 @@ BINARY_NAME = orca
 export CGO_ENABLED = 0
 
 .proto:
-	cd core/protobufs && protoc \
+	cd protobufs && protoc \
 		--go_out=go \
 		--go_opt=paths=source_relative \
 		--go-grpc_out=go \
 		--go-grpc_opt=paths=source_relative \
 		*.proto vendor/*.proto
-	cd core/protobufs && python -m grpc_tools.protoc \
+	cd protobufs && python -m grpc_tools.protoc \
     --proto_path=./ \
     --python_out=./python \
     --pyi_out=./python \
     --grpc_python_out=./python \
 		*.proto vendor/*.proto
-	cd core/protobufs && protoc \
+	cd protobufs && protoc \
 		--plugin=protoc-gen-ts=`which protoc-gen-ts_proto` \
 		--ts_proto_out=./nodejs \
 		--ts_proto_opt=esModuleInterop=true \
@@ -50,8 +50,8 @@ export CGO_ENABLED = 0
 		*.proto vendor/*.proto
 
 .datalayer:
-	sqlc vet -f core/internal/datalayers/postgresql/sqlc.yaml
-	sqlc generate -f core/internal/datalayers/postgresql/sqlc.yaml
+	sqlc vet -f internal/datalayers/postgresql/sqlc.yaml
+	sqlc generate -f internal/datalayers/postgresql/sqlc.yaml
 
 .stop_datalayer:
 	cd local_storage && docker-compose stop
@@ -88,7 +88,7 @@ export CGO_ENABLED = 0
 	sudo chmod 640 local_storage/_ca/server.key
 
 .test_all:
-	cd core && go test ./internal/... -v
+	go test ./internal/... -v
 
 # ------------- BUILD -------------
 
@@ -96,34 +96,19 @@ export CGO_ENABLED = 0
 BUILD = go build -ldflags "$(LDFLAGS)" -o
 
 # platform targets
-.PHONY: cli_all cli_clean cli_linux cli_windows cli_mac_arm cli_mac_intel
+build_all: linux windows mac_arm mac_intel
 
-build_cli_all: cli_linux cli_windows cli_mac_arm cli_mac_intel
-build_core_all: core_linux core_windows core_mac_arm core_mac_intel
+linux:
+	GOOS=linux GOARCH=amd64 $(BUILD) ./build/$(BINARY_NAME)-amd64-linux .
 
-cli_linux:
-	cd cli && GOOS=linux GOARCH=amd64 $(BUILD) ../build/$(BINARY_NAME)-cli-linux .
+windows:
+	GOOS=windows GOARCH=amd64 $(BUILD) ./build/$(BINARY_NAME)-amd64-windows.exe .
 
-cli_windows:
-	cd cli && GOOS=windows GOARCH=amd64 $(BUILD) ../build/$(BINARY_NAME)-cli-windows.exe .
+mac_arm:
+	GOOS=darwin GOARCH=arm64 $(BUILD) ./build/$(BINARY_NAME)-amd64-mac-arm .
 
-cli_mac_arm:
-	cd cli && GOOS=darwin GOARCH=arm64 $(BUILD) ../build/$(BINARY_NAME)-cli-mac-arm .
-
-cli_mac_intel:
-	cd cli && GOOS=darwin GOARCH=amd64 $(BUILD) ../build/$(BINARY_NAME)-cli-mac-intel .
-
-core_linux:
-	cd core && GOOS=linux GOARCH=amd64 $(BUILD) ../build/$(BINARY_NAME)-core-linux .
-
-core_windows:
-	cd core && GOOS=windows GOARCH=amd64 $(BUILD) ../build/$(BINARY_NAME)-core-windows.exe .
-
-core_mac_arm:
-	cd core && GOOS=darwin GOARCH=arm64 $(BUILD) ../build/$(BINARY_NAME)-core-mac-arm .
-
-core_mac_intel:
-	cd core && GOOS=darwin GOARCH=amd64 $(BUILD) ../build/$(BINARY_NAME)-core-mac-intel .
+mac_intel:
+	GOOS=darwin GOARCH=amd64 $(BUILD) ./build/$(BINARY_NAME)-amd64-mac-intel .
 
 cli_clean:
 	rm -rf build/
