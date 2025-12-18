@@ -232,7 +232,7 @@ class ProcessorMetrics(_message.Message):
     def __init__(self, active_tasks: _Optional[int] = ..., memory_bytes: _Optional[int] = ..., cpu_percent: _Optional[float] = ..., uptime_seconds: _Optional[int] = ...) -> None: ...
 
 class InternalState(_message.Message):
-    __slots__ = ("algorithms",)
-    ALGORITHMS_FIELD_NUMBER: _ClassVar[int]
-    algorithms: _containers.RepeatedCompositeFieldContainer[Algorithm]
-    def __init__(self, algorithms: _Optional[_Iterable[_Union[Algorithm, _Mapping]]] = ...) -> None: ...
+    __slots__ = ("processors",)
+    PROCESSORS_FIELD_NUMBER: _ClassVar[int]
+    processors: _containers.RepeatedCompositeFieldContainer[ProcessorRegistration]
+    def __init__(self, processors: _Optional[_Iterable[_Union[ProcessorRegistration, _Mapping]]] = ...) -> None: ...

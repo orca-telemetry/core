@@ -371,10 +371,9 @@ message ProcessorMetrics {
   int64 uptime_seconds = 4;
 }
 
-// InternalState provides a snapshot of the internal state of the Orca
-// instance.
+// InternalState provides a complete snapshot of Orca's registry.
+// This is used by clients to "clone" the remote state into local code stubs.
 message InternalState {
-  // Provides the same structure that processors use to register algorithms - simply
-  // reverses the process.
-  repeated Algorithm algorithms = 1;
+  // Global list of all registered processors and their metadata
+  repeated ProcessorRegistration processors = 1;
 }

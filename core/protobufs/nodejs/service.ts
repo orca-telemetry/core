@@ -568,15 +568,12 @@ export interface ProcessorMetrics {
 }
 
 /**
- * InternalState provides a snapshot of the internal state of the Orca
- * instance.
+ * InternalState provides a complete snapshot of Orca's registry.
+ * This is used by clients to "clone" the remote state into local code stubs.
  */
 export interface InternalState {
-  /**
-   * Provides the same structure that processors use to register algorithms - simply
-   * reverses the process.
-   */
-  algorithms?: Algorithm[] | undefined;
+  /** Global list of all registered processors and their metadata */
+  processors?: ProcessorRegistration[] | undefined;
 }
 
 function createBaseExposeSettings(): ExposeSettings {
@@ -2347,14 +2344,14 @@ export const ProcessorMetrics: MessageFns<ProcessorMetrics> = {
 };
 
 function createBaseInternalState(): InternalState {
-  return { algorithms: [] };
+  return { processors: [] };
 }
 
 export const InternalState: MessageFns<InternalState> = {
   encode(message: InternalState, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.algorithms !== undefined && message.algorithms.length !== 0) {
-      for (const v of message.algorithms) {
-        Algorithm.encode(v!, writer.uint32(10).fork()).join();
+    if (message.processors !== undefined && message.processors.length !== 0) {
+      for (const v of message.processors) {
+        ProcessorRegistration.encode(v!, writer.uint32(10).fork()).join();
       }
     }
     return writer;
@@ -2372,9 +2369,9 @@ export const InternalState: MessageFns<InternalState> = {
             break;
           }
 
-          const el = Algorithm.decode(reader, reader.uint32());
+          const el = ProcessorRegistration.decode(reader, reader.uint32());
           if (el !== undefined) {
-            message.algorithms!.push(el);
+            message.processors!.push(el);
           }
           continue;
         }
@@ -2389,16 +2386,16 @@ export const InternalState: MessageFns<InternalState> = {
 
   fromJSON(object: any): InternalState {
     return {
-      algorithms: globalThis.Array.isArray(object?.algorithms)
-        ? object.algorithms.map((e: any) => Algorithm.fromJSON(e))
+      processors: globalThis.Array.isArray(object?.processors)
+        ? object.processors.map((e: any) => ProcessorRegistration.fromJSON(e))
         : [],
     };
   },
 
   toJSON(message: InternalState): unknown {
     const obj: any = {};
-    if (message.algorithms?.length) {
-      obj.algorithms = message.algorithms.map((e) => Algorithm.toJSON(e));
+    if (message.processors?.length) {
+      obj.processors = message.processors.map((e) => ProcessorRegistration.toJSON(e));
     }
     return obj;
   },
@@ -2408,7 +2405,7 @@ export const InternalState: MessageFns<InternalState> = {
   },
   fromPartial<I extends Exact<DeepPartial<InternalState>, I>>(object: I): InternalState {
     const message = createBaseInternalState();
-    message.algorithms = object.algorithms?.map((e) => Algorithm.fromPartial(e)) || [];
+    message.processors = object.processors?.map((e) => ProcessorRegistration.fromPartial(e)) || [];
     return message;
   },
 };

@@ -281,31 +281,75 @@ func (d *Datalayer) Expose(
 
 	qtx := d.queries.WithTx(pgTx.tx)
 
+	// read all the processors
+	processors, err := qtx.ReadProcessors(ctx)
+	if err != nil {
+		slog.Error("could not read algorithms", "error", err)
+		return nil, fmt.Errorf("could not read algorithms: %w", err)
+	}
+
 	// read all the algorithms
 	algorithms, err := qtx.ReadAlgorithms(ctx)
 	if err != nil {
 		slog.Error("could not read algorithms", "error", err)
 		return nil, fmt.Errorf("could not read algorithms: %w", err)
 	}
+
 	algosMap := make(map[int]Algorithm, len(algorithms))
 	for ii, algo := range algorithms {
 		// pack 'em into the map
 		algosMap[ii] = algo
 	}
 
-	// get read all the window types
+	// read all the metadata fields
+	mdf, err := qtx.ReadMetadataFields(ctx)
+	if err != nil {
+		slog.Error("could not read metadata fields", "error", err)
+		return nil, fmt.Errorf("could not read metadata fields: %w", err)
+	}
+	mdfsMap := make(map[int64]MetadataField, len(mdf))
+	for _, mdf := range mdf {
+		mdfsMap[mdf.ID] = mdf
+	}
+
+	// read all the metadata fields for window types from bridge table
+	wtmdf, err := qtx.ReadWindowTypeMetadataFields(ctx)
+	if err != nil {
+		slog.Error("could not read window type metadata fields", "error", err)
+		return nil, fmt.Errorf("could not read window type metadata fields: %w", err)
+	}
+	wtToMdf := make(map[string][]*pb.MetadataField)
+	for _, wtmd := range wtmdf {
+		_key := fmt.Sprintf("%v_%v", wtmd.WindowTypeName, wtmd.WindowTypeVersion)
+
+		wtToMdf[_key] = append(wtToMdf[_key], &pb.MetadataField{
+			Name:        wtmd.MetadataFieldName,
+			Description: wtmd.MetadataFieldDescription,
+		})
+	}
+
+	// read all the window types
 	wts, err := qtx.ReadWindowTypes(ctx)
 	if err != nil {
 		slog.Error("could not read window types", "error", err)
 		return nil, fmt.Errorf("could not read window types: %w", err)
 	}
-	wtsMap := make(map[int64]WindowType, len(wts))
+	wtsMap := make(map[int64]*pb.WindowType, len(wts))
 	for _, wt := range wts {
-		wtsMap[wt.ID] = wt
+		metadataFields, ok := wtToMdf[fmt.Sprintf("%v_%v", wt.Name, wt.Version)]
+		if !ok {
+			slog.Info("no metadata fields found for window type", "windowType", wt)
+		}
+		wtsMap[wt.ID] = &pb.WindowType{
+			Name:           wt.Name,
+			Version:        wt.Version,
+			Description:    wt.Description,
+			MetadataFields: metadataFields,
+		}
 	}
 
-	algorithmsPb := make([]*pb.Algorithm, len(algorithms))
-	for jj, algo := range algorithms {
+	algosForProcessor := make(map[int64][]*pb.Algorithm)
+	for _, algo := range algorithms {
 		// get the window type for this algorithm
 		wt, ok := wtsMap[algo.WindowTypeID]
 		if !ok {
@@ -327,21 +371,35 @@ func (d *Datalayer) Expose(
 			resultType = pb.ResultType_NOT_SPECIFIED
 		}
 
-		algorithmsPb[jj] = &pb.Algorithm{
-			Name:    algo.Name,
-			Version: algo.Version,
-			WindowType: &pb.WindowType{
-				Name:        wt.Name,
-				Version:     wt.Version,
-				Description: wt.Description,
-			},
+		algosForProcessor[algo.ProcessorID] = append(algosForProcessor[algo.ProcessorID], &pb.Algorithm{
+			Name:        algo.Name,
+			Version:     algo.Version,
+			WindowType:  wt,
 			ResultType:  resultType,
 			Description: algo.Description,
+		},
+		)
+	}
+
+	processorsPb := make([]*pb.ProcessorRegistration, len(processors))
+
+	for ll, p := range processors {
+		algos, ok := algosForProcessor[p.ID]
+		if !ok {
+			slog.Error("could not find algorithms for processor", "processorId", p.ID)
+			return nil, fmt.Errorf("could not find algorithms for processor ID: %v", p.ID)
+
+		}
+		processorsPb[ll] = &pb.ProcessorRegistration{
+			Name:                p.Name,
+			Runtime:             p.Runtime,
+			SupportedAlgorithms: algos,
 		}
 	}
 
+	slog.Debug("exposed state", "processors", processorsPb)
 	return &pb.InternalState{
-		Algorithms: algorithmsPb,
+		Processors: processorsPb,
 	}, nil
 
 }
