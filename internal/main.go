@@ -5,10 +5,9 @@ import (
 	"log/slog"
 
 	"github.com/bufbuild/protovalidate-go"
-	dlyr "github.com/orc-analytics/orca/core/internal/datalayers"
-	types "github.com/orc-analytics/orca/core/internal/types"
-	pb "github.com/orc-analytics/orca/core/protobufs/go"
-	"google.golang.org/grpc"
+	dlyr "github.com/orc-analytics/orca/internal/datalayers"
+	types "github.com/orc-analytics/orca/internal/types"
+	pb "github.com/orc-analytics/orca/protobufs/go"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -21,10 +20,6 @@ type (
 
 var (
 	MAX_PROCESSORS = 20
-	processors     = make(
-		[]grpc.ServerStreamingServer[pb.ProcessingTask],
-		MAX_PROCESSORS,
-	)
 )
 
 // NewServer produces a new ORCA gRPC server

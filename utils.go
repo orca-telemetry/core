@@ -11,10 +11,10 @@ import (
 
 // style for the placeholder text
 var (
-	errorStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("9")). // Red text
-			Bold(true).
-			MarginTop(1)
+	// errorStyle = lipgloss.NewStyle().
+	// 		Foreground(lipgloss.Color("9")). // Red text
+	// 		Bold(true).
+	// 		MarginTop(1)
 	errorHeaderStyle = lipgloss.NewStyle().
 				Foreground(lipgloss.Color("9")). // Red text
 				Bold(true).
