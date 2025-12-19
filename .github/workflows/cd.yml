@@ -56,7 +56,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
-          version: ${{ env.TAG_NAME }}
-          args: release --clean
+          version: latest
+          args: --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
