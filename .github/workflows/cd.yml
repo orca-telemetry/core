@@ -2,12 +2,15 @@ name: CD
 
 on:
   push:
-    branches: ["release/*"]
+    branches: 
+      - "release/*"
+      - "main"
 
 jobs:
   build-and-release-rc:
     name: Build and Release RC
     runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/heads/release/')
     permissions:
       contents: write
       packages: write
@@ -73,3 +76,85 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  promote-to-stable:
+    name: Promote RC to Stable Release
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if merge commit from release branch
+        id: check_merge
+        run: |
+          # Check if this is a merge commit (has 2 parents)
+          PARENT_COUNT=$(git rev-list --parents -n 1 HEAD | wc -w)
+          PARENT_COUNT=$((PARENT_COUNT - 1))
+          
+          if [ $PARENT_COUNT -ne 2 ]; then
+            echo "is_release_merge=false" >> $GITHUB_OUTPUT
+            echo "Not a merge commit, skipping promotion"
+            exit 0
+          fi
+          
+          # Get the merge commit message
+          COMMIT_MSG=$(git log -1 --pretty=%B)
+          
+          # Check if this is a merge from a release branch
+          if echo "$COMMIT_MSG" | grep -qE "Merge.*release/"; then
+            echo "is_release_merge=true" >> $GITHUB_OUTPUT
+            echo "This is a merge from a release branch"
+          else
+            echo "is_release_merge=false" >> $GITHUB_OUTPUT
+            echo "This is a merge but not from a release branch, skipping promotion"
+          fi
+
+      - name: Find and promote latest prerelease
+        if: steps.check_merge.outputs.is_release_merge == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const releases = await github.rest.repos.listReleases({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+            
+            // Find latest prerelease
+            const latestRC = releases.data.find(r => r.prerelease && r.tag_name.includes('-rc.'));
+            
+            if (!latestRC) {
+              console.log('No RC release found to promote');
+              core.setFailed('No RC release found to promote');
+              return;
+            }
+            
+            console.log(`Found RC release: ${latestRC.tag_name}`);
+            
+            // Extract stable version
+            const stableTag = latestRC.tag_name.replace(/-rc\..*$/, '');
+            console.log(`Creating stable release: ${stableTag}`);
+            
+            // Create stable tag
+            await github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: `refs/tags/${stableTag}`,
+              sha: latestRC.target_commitish
+            });
+            
+            // Update release
+            await github.rest.repos.updateRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: latestRC.id,
+              tag_name: stableTag,
+              name: `${context.repo.repo} ${stableTag}`,
+              prerelease: false
+            });
+            
+            console.log(`Successfully promoted ${latestRC.tag_name} to ${stableTag}`);
