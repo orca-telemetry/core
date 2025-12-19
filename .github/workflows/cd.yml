@@ -52,11 +52,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Run GoReleaser (snapshot for RC)
+      - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
           version: latest
-          args: --clean --snapshot
+          args: --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
