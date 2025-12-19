@@ -37,11 +37,10 @@ archives:
 
 dockers_v2:
   - images:
-      - "ghcr.io/orc-analytics/core:{{ .Version }}"
+      - "ghcr.io/orc-analytics/core"
 
     tags:
-      - "v{{ .Version }}"
-      - "latest"
+      - "{{ .Version }}"
 
     labels:
       "org.opencontainers.image.created": "{{.Date}}"
