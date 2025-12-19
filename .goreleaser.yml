@@ -41,6 +41,7 @@ dockers_v2:
 
     tags:
       - "{{ .Version }}"
+      - "{{ if not .Prerelease }}latest{{ end }}"
 
     labels:
       "org.opencontainers.image.created": "{{.Date}}"

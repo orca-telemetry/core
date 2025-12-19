@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      packages: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -41,8 +42,9 @@ jobs:
             echo "This is a merge but not from a release branch, skipping promotion"
           fi
 
-      - name: Find and promote latest prerelease
+      - name: Find latest prerelease and extract version
         if: steps.check_merge.outputs.is_release_merge == 'true'
+        id: find_version
         uses: actions/github-script@v7
         with:
           script: |
@@ -64,24 +66,75 @@ jobs:
             
             // Extract stable version
             const stableTag = latestRC.tag_name.replace(/-rc\..*$/, '');
-            console.log(`Creating stable release: ${stableTag}`);
+            console.log(`Will create stable release: ${stableTag}`);
             
-            // Create stable tag
-            await github.rest.git.createRef({
+            core.setOutput('rc_tag', latestRC.tag_name);
+            core.setOutput('stable_tag', stableTag);
+            core.setOutput('rc_release_id', latestRC.id);
+
+      - name: Set up Go
+        if: steps.check_merge.outputs.is_release_merge == 'true'
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.24"
+
+      - name: Create stable tag
+        if: steps.check_merge.outputs.is_release_merge == 'true'
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git tag -a ${{ steps.find_version.outputs.stable_tag }} -m "Release ${{ steps.find_version.outputs.stable_tag }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU
+        if: steps.check_merge.outputs.is_release_merge == 'true'
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        if: steps.check_merge.outputs.is_release_merge == 'true'
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        if: steps.check_merge.outputs.is_release_merge == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run GoReleaser for stable release
+        if: steps.check_merge.outputs.is_release_merge == 'true'
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Delete RC release
+        if: steps.check_merge.outputs.is_release_merge == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const rcReleaseId = '${{ steps.find_version.outputs.rc_release_id }}';
+            const rcTag = '${{ steps.find_version.outputs.rc_tag }}';
+            
+            console.log(`Deleting RC release: ${rcTag}`);
+            
+            // Delete the release
+            await github.rest.repos.deleteRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              ref: `refs/tags/${stableTag}`,
-              sha: latestRC.target_commitish
+              release_id: rcReleaseId
             });
             
-            // Update release
-            await github.rest.repos.updateRelease({
+            // Delete the RC tag
+            await github.rest.git.deleteRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              release_id: latestRC.id,
-              tag_name: stableTag,
-              name: `${context.repo.repo} ${stableTag}`,
-              prerelease: false
+              ref: `tags/${rcTag}`
             });
             
-            console.log(`Successfully promoted ${latestRC.tag_name} to ${stableTag}`);
+            console.log(`Successfully deleted RC release and tag`);
