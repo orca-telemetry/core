@@ -33,11 +33,12 @@ jobs:
         with:
           go-version: "1.24"
 
-      - name: Create RC tag
+      - name: Create and push RC tag
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
           git tag -a ${{ env.TAG_NAME }} -m "Release candidate ${{ env.TAG_NAME }}"
+          git push origin ${{ env.TAG_NAME }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
