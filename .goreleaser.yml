@@ -38,7 +38,7 @@ archives:
 dockers_v2:
   - images:
       - "ghcr.io/orc-analytics/core:{{ .Version }}"
-      - "ghcr.io/orc-analytics/core:latest"
+
     tags:
       - "v{{ .Version }}"
       - "latest"
@@ -50,8 +50,6 @@ dockers_v2:
       "org.opencontainers.image.version": "{{.Version}}"
     ids:
       - orca
-
-docker_manifests: []
 
 release:
   prerelease: auto
