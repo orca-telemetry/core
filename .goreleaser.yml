@@ -27,7 +27,6 @@ builds:
 
 archives:
   - id: orca
-    format: tar.gz
     name_template: >-
       {{ .ProjectName }}_
       {{- .Version }}_
