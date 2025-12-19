@@ -47,12 +47,13 @@ dockers_v2:
       "org.opencontainers.image.title": "{{.ProjectName}}"
       "org.opencontainers.image.revision": "{{.FullCommit}}"
       "org.opencontainers.image.version": "{{.Version}}"
+    
     ids:
       - orca
 
     platforms:
-    - linux/amd64
-    - linux/arm64V
+      - linux/amd64
+      - linux/arm64
 
 release:
   prerelease: auto
