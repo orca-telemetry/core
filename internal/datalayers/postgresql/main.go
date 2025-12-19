@@ -11,8 +11,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"github.com/orc-analytics/orca/internal/dag"
-	pb "github.com/orc-analytics/orca/protobufs/go"
+	"github.com/orc-analytics/core/internal/dag"
+	pb "github.com/orc-analytics/core/protobufs/go"
 )
 
 // RegisterProcessor with Orca Core
