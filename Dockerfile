@@ -1,5 +1,7 @@
 FROM gcr.io/distroless/static-debian12:nonroot
 
-COPY orca /app/orca
+ARG TARGETPLATFORM
+
+COPY ${TARGETPLATFORM}/orca /app/orca
 
 ENTRYPOINT ["/app/orca"]
