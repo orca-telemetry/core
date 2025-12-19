@@ -50,7 +50,8 @@ dockers_v2:
       "org.opencontainers.image.version": "{{.Version}}"
     ids:
       - orca
-    
+
+docker_manifests: []
 
 release:
   prerelease: auto
