@@ -50,6 +50,10 @@ dockers_v2:
     ids:
       - orca
 
+    platforms:
+    - linux/amd64
+    - linux/arm64V
+
 release:
   prerelease: auto
   name_template: "{{.ProjectName}} {{.Version}}"
