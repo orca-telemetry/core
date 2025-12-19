@@ -8,6 +8,8 @@ on:
     branches: ["main"]
     paths-ignore:
       - "**/**.md"
+    branches-ignore:
+      - "release/*"
   pull_request:
     branches: ["main", "release/*"]
     paths-ignore:
@@ -24,8 +26,5 @@ jobs:
         with:
           go-version: "1.24"
 
-      - name: Install Make
-        run: sudo apt-get update && sudo apt-get install -y make
-
       - name: Test
-        run: make test
+        run: go test ./... -v
