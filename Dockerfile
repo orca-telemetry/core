@@ -1,4 +1,4 @@
-FROM gcr.io/distroless/static:nonroot
+FROM gcr.io/distroless/base-debian12:nonroot
 
 RUN apk --no-cache add ca-certificates
 
