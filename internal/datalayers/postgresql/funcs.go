@@ -11,8 +11,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
-	types "github.com/orc-analytics/orca/internal/types"
-	pb "github.com/orc-analytics/orca/protobufs/go"
+	types "github.com/orc-analytics/core/internal/types"
+	pb "github.com/orc-analytics/core/protobufs/go"
 )
 
 type Datalayer struct {

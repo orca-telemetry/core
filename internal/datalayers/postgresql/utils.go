@@ -13,10 +13,10 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/orc-analytics/orca/internal/dag"
+	"github.com/orc-analytics/core/internal/dag"
 
-	"github.com/orc-analytics/orca/internal/envs"
-	pb "github.com/orc-analytics/orca/protobufs/go"
+	"github.com/orc-analytics/core/internal/envs"
+	pb "github.com/orc-analytics/core/protobufs/go"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"

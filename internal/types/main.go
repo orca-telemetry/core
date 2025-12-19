@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	pb "github.com/orc-analytics/orca/protobufs/go"
+	pb "github.com/orc-analytics/core/protobufs/go"
 )
 
 // the interface that all datalayers must implement to be compatible with Orca

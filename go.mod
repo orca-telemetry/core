@@ -1,4 +1,4 @@
-module github.com/orc-analytics/orca
+module github.com/orc-analytics/core
 
 go 1.24.0
 
