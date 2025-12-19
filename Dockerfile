@@ -1,10 +1,10 @@
-FROM alpine:latest
+FROM gcr.io/distroless/static:nonroot
 
 RUN apk --no-cache add ca-certificates
 
 WORKDIR /app
 
-# Copy the pre-built binary from GoReleaser
+# copy the pre-built binary from GoReleaser
 COPY orca /app/orca
 
 ENTRYPOINT ["/app/orca"]
