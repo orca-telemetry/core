@@ -169,7 +169,8 @@ INSERT INTO processor (
 SET 
   name = EXCLUDED.name,
   runtime = EXCLUDED.runtime,
-  connection_string = EXCLUDED.connection_string
+  connection_string = EXCLUDED.connection_string,
+  project_name = EXCLUDED.project_name
 RETURNING id
 `
 
