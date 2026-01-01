@@ -165,11 +165,12 @@ INSERT INTO processor (
   $2,
   $3,
   $4
-) ON CONFLICT (name, runtime) DO UPDATE 
+) ON CONFLICT (name, project_name, runtime) DO UPDATE 
 SET 
   name = EXCLUDED.name,
   runtime = EXCLUDED.runtime,
-  connection_string = EXCLUDED.connection_string
+  connection_string = EXCLUDED.connection_string,
+  project_name = EXCLUDED.project_name
 RETURNING id
 `
 
