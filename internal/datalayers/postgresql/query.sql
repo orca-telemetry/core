@@ -10,7 +10,7 @@ INSERT INTO processor (
   sqlc.arg('runtime'),
   sqlc.arg('connection_string'),
   sqlc.arg('project_name')
-) ON CONFLICT (name, project_name, runtime) DO UPDATE 
+) ON CONFLICT (name, runtime) DO UPDATE 
 SET 
   name = EXCLUDED.name,
   runtime = EXCLUDED.runtime,
