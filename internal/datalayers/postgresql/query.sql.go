@@ -158,11 +158,13 @@ const createProcessor = `-- name: CreateProcessor :exec
 INSERT INTO processor (
   name,
   runtime,
-  connection_string
+  connection_string,
+  project_name
 ) VALUES (
   $1,
   $2,
-  $3
+  $3,
+  $4
 ) ON CONFLICT (name, runtime) DO UPDATE 
 SET 
   name = EXCLUDED.name,
@@ -175,11 +177,17 @@ type CreateProcessorParams struct {
 	Name             string
 	Runtime          string
 	ConnectionString string
+	ProjectName      pgtype.Text
 }
 
 // -------------------- Core Operations ----------------------
 func (q *Queries) CreateProcessor(ctx context.Context, arg CreateProcessorParams) error {
-	_, err := q.db.Exec(ctx, createProcessor, arg.Name, arg.Runtime, arg.ConnectionString)
+	_, err := q.db.Exec(ctx, createProcessor,
+		arg.Name,
+		arg.Runtime,
+		arg.ConnectionString,
+		arg.ProjectName,
+	)
 	return err
 }
 
