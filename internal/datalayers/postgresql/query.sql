@@ -3,11 +3,13 @@
 INSERT INTO processor (
   name,
   runtime,
-  connection_string
+  connection_string,
+  project_name
 ) VALUES (
   sqlc.arg('name'),
   sqlc.arg('runtime'),
-  sqlc.arg('connection_string')
+  sqlc.arg('connection_string'),
+  sqlc.arg('project_name')
 ) ON CONFLICT (name, runtime) DO UPDATE 
 SET 
   name = EXCLUDED.name,
