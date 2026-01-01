@@ -10,11 +10,12 @@ INSERT INTO processor (
   sqlc.arg('runtime'),
   sqlc.arg('connection_string'),
   sqlc.arg('project_name')
-) ON CONFLICT (name, runtime) DO UPDATE 
+) ON CONFLICT (name, project_name, runtime) DO UPDATE 
 SET 
   name = EXCLUDED.name,
   runtime = EXCLUDED.runtime,
-  connection_string = EXCLUDED.connection_string
+  connection_string = EXCLUDED.connection_string,
+  project_name = EXCLUDED.project_name
 RETURNING id;
 
 -- name: CreateMetadataField :one
