@@ -40,7 +40,9 @@ service OrcaProcessor {
 }
 
 // ExposeSettings provides optional settings to the `Expose` procedure
-message ExposeSettings {}
+message ExposeSettings {
+  string exclude_project = 1;
+}
 
 // Window represents a time-bounded processing context that triggers algorithm execution. Windows are the primary input that start DAG processing flows.
 message Window {
@@ -266,6 +268,10 @@ message ProcessorRegistration {
   // Algorithms this processor can execute
   // The processor must implement all listed algorithms
   repeated Algorithm supported_algorithms = 4 [(buf.validate.field).required = true];
+  
+  // A name that can be attached to a group of processors. Describes the project in which
+  // they are defined (typically a single git repository)
+  string project_name = 5;
 }
 
 // ProcessingTask represents a single algorithm execution request sent to a processor.

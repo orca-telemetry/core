@@ -127,6 +127,7 @@ type Processor struct {
 	Runtime          string
 	ConnectionString string
 	Created          pgtype.Timestamp
+	ProjectName      pgtype.Text
 }
 
 type Result struct {

@@ -135,6 +135,7 @@ export function resultStatusToJSON(object: ResultStatus): string {
 
 /** ExposeSettings provides optional settings to the `Expose` procedure */
 export interface ExposeSettings {
+  excludeProject?: string | undefined;
 }
 
 /** Window represents a time-bounded processing context that triggers algorithm execution. Windows are the primary input that start DAG processing flows. */
@@ -398,7 +399,14 @@ export interface ProcessorRegistration {
    * Algorithms this processor can execute
    * The processor must implement all listed algorithms
    */
-  supportedAlgorithms?: Algorithm[] | undefined;
+  supportedAlgorithms?:
+    | Algorithm[]
+    | undefined;
+  /**
+   * A name that can be attached to a group of processors. Describes the project in which
+   * they are defined (typically a single git repository)
+   */
+  projectName?: string | undefined;
 }
 
 /**
@@ -577,11 +585,14 @@ export interface InternalState {
 }
 
 function createBaseExposeSettings(): ExposeSettings {
-  return {};
+  return { excludeProject: "" };
 }
 
 export const ExposeSettings: MessageFns<ExposeSettings> = {
-  encode(_: ExposeSettings, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+  encode(message: ExposeSettings, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.excludeProject !== undefined && message.excludeProject !== "") {
+      writer.uint32(10).string(message.excludeProject);
+    }
     return writer;
   },
 
@@ -592,6 +603,14 @@ export const ExposeSettings: MessageFns<ExposeSettings> = {
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.excludeProject = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -601,20 +620,24 @@ export const ExposeSettings: MessageFns<ExposeSettings> = {
     return message;
   },
 
-  fromJSON(_: any): ExposeSettings {
-    return {};
+  fromJSON(object: any): ExposeSettings {
+    return { excludeProject: isSet(object.excludeProject) ? globalThis.String(object.excludeProject) : "" };
   },
 
-  toJSON(_: ExposeSettings): unknown {
+  toJSON(message: ExposeSettings): unknown {
     const obj: any = {};
+    if (message.excludeProject !== undefined && message.excludeProject !== "") {
+      obj.excludeProject = message.excludeProject;
+    }
     return obj;
   },
 
   create<I extends Exact<DeepPartial<ExposeSettings>, I>>(base?: I): ExposeSettings {
     return ExposeSettings.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<ExposeSettings>, I>>(_: I): ExposeSettings {
+  fromPartial<I extends Exact<DeepPartial<ExposeSettings>, I>>(object: I): ExposeSettings {
     const message = createBaseExposeSettings();
+    message.excludeProject = object.excludeProject ?? "";
     return message;
   },
 };
@@ -1492,7 +1515,7 @@ export const Result: MessageFns<Result> = {
 };
 
 function createBaseProcessorRegistration(): ProcessorRegistration {
-  return { name: "", runtime: "", connectionStr: "", supportedAlgorithms: [] };
+  return { name: "", runtime: "", connectionStr: "", supportedAlgorithms: [], projectName: "" };
 }
 
 export const ProcessorRegistration: MessageFns<ProcessorRegistration> = {
@@ -1510,6 +1533,9 @@ export const ProcessorRegistration: MessageFns<ProcessorRegistration> = {
       for (const v of message.supportedAlgorithms) {
         Algorithm.encode(v!, writer.uint32(34).fork()).join();
       }
+    }
+    if (message.projectName !== undefined && message.projectName !== "") {
+      writer.uint32(42).string(message.projectName);
     }
     return writer;
   },
@@ -1556,6 +1582,14 @@ export const ProcessorRegistration: MessageFns<ProcessorRegistration> = {
           }
           continue;
         }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.projectName = reader.string();
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1573,6 +1607,7 @@ export const ProcessorRegistration: MessageFns<ProcessorRegistration> = {
       supportedAlgorithms: globalThis.Array.isArray(object?.supportedAlgorithms)
         ? object.supportedAlgorithms.map((e: any) => Algorithm.fromJSON(e))
         : [],
+      projectName: isSet(object.projectName) ? globalThis.String(object.projectName) : "",
     };
   },
 
@@ -1590,6 +1625,9 @@ export const ProcessorRegistration: MessageFns<ProcessorRegistration> = {
     if (message.supportedAlgorithms?.length) {
       obj.supportedAlgorithms = message.supportedAlgorithms.map((e) => Algorithm.toJSON(e));
     }
+    if (message.projectName !== undefined && message.projectName !== "") {
+      obj.projectName = message.projectName;
+    }
     return obj;
   },
 
@@ -1602,6 +1640,7 @@ export const ProcessorRegistration: MessageFns<ProcessorRegistration> = {
     message.runtime = object.runtime ?? "";
     message.connectionStr = object.connectionStr ?? "";
     message.supportedAlgorithms = object.supportedAlgorithms?.map((e) => Algorithm.fromPartial(e)) || [];
+    message.projectName = object.projectName ?? "";
     return message;
   },
 };

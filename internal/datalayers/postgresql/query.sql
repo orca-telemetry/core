@@ -205,6 +205,9 @@ INSERT INTO results (
 -- name: ReadProcessors :many
 SELECT * FROM processor;
 
+-- name: ReadProcessorExcludeProject :many
+SELECT * FROM processor WHERE project_name != sqlc.arg('project_name');
+
 -- name: ReadProcessorsByIDs :many
 SELECT 
   id,
