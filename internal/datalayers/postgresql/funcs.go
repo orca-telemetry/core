@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 	types "github.com/orc-analytics/core/internal/types"
 	pb "github.com/orc-analytics/core/protobufs/go"
@@ -74,6 +75,7 @@ func (d *Datalayer) createProcessor(
 		Name:             proc.GetName(),
 		Runtime:          proc.GetRuntime(),
 		ConnectionString: proc.GetConnectionStr(),
+		ProjectName:      pgtype.Text{String: proc.GetProjectName(), Valid: true},
 	})
 	if err != nil {
 		slog.Error("could not create processor", "error", err)
