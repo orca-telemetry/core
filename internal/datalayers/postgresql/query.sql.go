@@ -595,8 +595,39 @@ func (q *Queries) ReadMetadataFieldsByWindowType(ctx context.Context, arg ReadMe
 	return items, nil
 }
 
+const readProcessorExcludeProject = `-- name: ReadProcessorExcludeProject :many
+SELECT id, name, runtime, connection_string, created, project_name FROM processor WHERE project_name != $1
+`
+
+func (q *Queries) ReadProcessorExcludeProject(ctx context.Context, projectName pgtype.Text) ([]Processor, error) {
+	rows, err := q.db.Query(ctx, readProcessorExcludeProject, projectName)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Processor
+	for rows.Next() {
+		var i Processor
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Runtime,
+			&i.ConnectionString,
+			&i.Created,
+			&i.ProjectName,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const readProcessors = `-- name: ReadProcessors :many
-SELECT id, name, runtime, connection_string, created FROM processor
+SELECT id, name, runtime, connection_string, created, project_name FROM processor
 `
 
 func (q *Queries) ReadProcessors(ctx context.Context) ([]Processor, error) {
@@ -614,6 +645,7 @@ func (q *Queries) ReadProcessors(ctx context.Context) ([]Processor, error) {
 			&i.Runtime,
 			&i.ConnectionString,
 			&i.Created,
+			&i.ProjectName,
 		); err != nil {
 			return nil, err
 		}
@@ -637,15 +669,23 @@ WHERE id = ANY($1::bigint[])
 ORDER BY name, runtime
 `
 
-func (q *Queries) ReadProcessorsByIDs(ctx context.Context, processorIds []int64) ([]Processor, error) {
+type ReadProcessorsByIDsRow struct {
+	ID               int64
+	Name             string
+	Runtime          string
+	ConnectionString string
+	Created          pgtype.Timestamp
+}
+
+func (q *Queries) ReadProcessorsByIDs(ctx context.Context, processorIds []int64) ([]ReadProcessorsByIDsRow, error) {
 	rows, err := q.db.Query(ctx, readProcessorsByIDs, processorIds)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Processor
+	var items []ReadProcessorsByIDsRow
 	for rows.Next() {
-		var i Processor
+		var i ReadProcessorsByIDsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,

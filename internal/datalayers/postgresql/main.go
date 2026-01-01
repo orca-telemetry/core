@@ -260,7 +260,7 @@ func (d *Datalayer) EmitWindow(
 
 func (d *Datalayer) Expose(
 	ctx context.Context,
-	_ *pb.ExposeSettings,
+	settings *pb.ExposeSettings,
 ) (*pb.InternalState, error) {
 	// settings not handled for now
 
@@ -280,9 +280,16 @@ func (d *Datalayer) Expose(
 	pgTx := tx.(*PgTx)
 
 	qtx := d.queries.WithTx(pgTx.tx)
-
-	// read all the processors
-	processors, err := qtx.ReadProcessors(ctx)
+	var processors []Processor
+	if len(settings.ExcludeProject) > 0 {
+		processors, err = qtx.ReadProcessorExcludeProject(ctx, pgtype.Text{
+			String: settings.ExcludeProject,
+			Valid:  true,
+		})
+	} else {
+		// read all the processors
+		processors, err = qtx.ReadProcessors(ctx)
+	}
 	if err != nil {
 		slog.Error("could not read algorithms", "error", err)
 		return nil, fmt.Errorf("could not read algorithms: %w", err)

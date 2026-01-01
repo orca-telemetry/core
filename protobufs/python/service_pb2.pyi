@@ -32,8 +32,10 @@ RESULT_STATUS_UNHANDLED_FAILED: ResultStatus
 RESULT_STATUS_SUCEEDED: ResultStatus
 
 class ExposeSettings(_message.Message):
-    __slots__ = ()
-    def __init__(self) -> None: ...
+    __slots__ = ("exclude_project",)
+    EXCLUDE_PROJECT_FIELD_NUMBER: _ClassVar[int]
+    exclude_project: str
+    def __init__(self, exclude_project: _Optional[str] = ...) -> None: ...
 
 class Window(_message.Message):
     __slots__ = ("time_from", "time_to", "window_type_name", "window_type_version", "origin", "metadata")
@@ -134,16 +136,18 @@ class Result(_message.Message):
     def __init__(self, status: _Optional[_Union[ResultStatus, str]] = ..., single_value: _Optional[float] = ..., float_values: _Optional[_Union[FloatArray, _Mapping]] = ..., struct_value: _Optional[_Union[_struct_pb2.Struct, _Mapping]] = ..., timestamp: _Optional[int] = ...) -> None: ...
 
 class ProcessorRegistration(_message.Message):
-    __slots__ = ("name", "runtime", "connection_str", "supported_algorithms")
+    __slots__ = ("name", "runtime", "connection_str", "supported_algorithms", "project_name")
     NAME_FIELD_NUMBER: _ClassVar[int]
     RUNTIME_FIELD_NUMBER: _ClassVar[int]
     CONNECTION_STR_FIELD_NUMBER: _ClassVar[int]
     SUPPORTED_ALGORITHMS_FIELD_NUMBER: _ClassVar[int]
+    PROJECT_NAME_FIELD_NUMBER: _ClassVar[int]
     name: str
     runtime: str
     connection_str: str
     supported_algorithms: _containers.RepeatedCompositeFieldContainer[Algorithm]
-    def __init__(self, name: _Optional[str] = ..., runtime: _Optional[str] = ..., connection_str: _Optional[str] = ..., supported_algorithms: _Optional[_Iterable[_Union[Algorithm, _Mapping]]] = ...) -> None: ...
+    project_name: str
+    def __init__(self, name: _Optional[str] = ..., runtime: _Optional[str] = ..., connection_str: _Optional[str] = ..., supported_algorithms: _Optional[_Iterable[_Union[Algorithm, _Mapping]]] = ..., project_name: _Optional[str] = ...) -> None: ...
 
 class ProcessingTask(_message.Message):
     __slots__ = ("task_id", "algorithm", "window", "dependency_results")
