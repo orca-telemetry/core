@@ -209,12 +209,7 @@ SELECT * FROM processor;
 SELECT * FROM processor WHERE project_name != sqlc.arg('project_name');
 
 -- name: ReadProcessorsByIDs :many
-SELECT 
-  id,
-  name,
-  runtime,
-  connection_string,
-  created
+SELECT *
 FROM processor
 WHERE id = ANY(sqlc.arg('processor_ids')::bigint[])
 ORDER BY name, runtime;

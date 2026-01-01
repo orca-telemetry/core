@@ -658,40 +658,28 @@ func (q *Queries) ReadProcessors(ctx context.Context) ([]Processor, error) {
 }
 
 const readProcessorsByIDs = `-- name: ReadProcessorsByIDs :many
-SELECT 
-  id,
-  name,
-  runtime,
-  connection_string,
-  created
+SELECT id, name, runtime, connection_string, created, project_name
 FROM processor
 WHERE id = ANY($1::bigint[])
 ORDER BY name, runtime
 `
 
-type ReadProcessorsByIDsRow struct {
-	ID               int64
-	Name             string
-	Runtime          string
-	ConnectionString string
-	Created          pgtype.Timestamp
-}
-
-func (q *Queries) ReadProcessorsByIDs(ctx context.Context, processorIds []int64) ([]ReadProcessorsByIDsRow, error) {
+func (q *Queries) ReadProcessorsByIDs(ctx context.Context, processorIds []int64) ([]Processor, error) {
 	rows, err := q.db.Query(ctx, readProcessorsByIDs, processorIds)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ReadProcessorsByIDsRow
+	var items []Processor
 	for rows.Next() {
-		var i ReadProcessorsByIDsRow
+		var i Processor
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
 			&i.Runtime,
 			&i.ConnectionString,
 			&i.Created,
+			&i.ProjectName,
 		); err != nil {
 			return nil, err
 		}
