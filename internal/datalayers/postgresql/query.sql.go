@@ -165,7 +165,7 @@ INSERT INTO processor (
   $2,
   $3,
   $4
-) ON CONFLICT (name, project_name, runtime) DO UPDATE 
+) ON CONFLICT (name, runtime) DO UPDATE 
 SET 
   name = EXCLUDED.name,
   runtime = EXCLUDED.runtime,

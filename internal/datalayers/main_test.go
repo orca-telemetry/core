@@ -118,6 +118,7 @@ func TestAddProcessor(t *testing.T) {
 	proc_1 := pb.ProcessorRegistration{
 		Name:                "TestProcessor1",
 		Runtime:             "Test",
+		ProjectName:         "Test",
 		ConnectionStr:       processorConnStr_1,
 		SupportedAlgorithms: []*pb.Algorithm{&algo_1},
 	}
@@ -126,6 +127,7 @@ func TestAddProcessor(t *testing.T) {
 		Name:                "TestProcessor2",
 		Runtime:             "Test",
 		ConnectionStr:       processorConnStr_2,
+		ProjectName:         "Test",
 		SupportedAlgorithms: []*pb.Algorithm{&algo_2},
 	}
 
