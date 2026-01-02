@@ -7,11 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [unreleased]
 
-## [v0.11.0] - 18-12-2025
+## [v0.11.0] - 02-01-2026
 
 ### Added
 
-- Added a gRPC procedure to expose the internal state of Orca (Window types and Algorithms)
+- Added a gRPC procedure to expose the internal state of Orca (Window types and Algorithms).
 
 ### Removed
 
