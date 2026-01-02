@@ -1,49 +1,29 @@
 name: Promote Release
 
 on:
-  push:
-    branches: ["main"]
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
 
 jobs:
   promote-to-stable:
     name: Promote RC to Stable Release
+    # Only run if the PR was merged AND the source branch was release/*
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'release/')
     runs-on: ubuntu-latest
     permissions:
       contents: write
       packages: write
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Check if merge commit from release branch
-        id: check_merge
-        run: |
-          # Check if this is a merge commit (has 2 parents)
-          PARENT_COUNT=$(git rev-list --parents -n 1 HEAD | wc -w)
-          PARENT_COUNT=$((PARENT_COUNT - 1))
-          
-          if [ $PARENT_COUNT -ne 2 ]; then
-            echo "is_release_merge=false" >> $GITHUB_OUTPUT
-            echo "Not a merge commit, skipping promotion"
-            exit 0
-          fi
-          
-          # Get the merge commit message
-          COMMIT_MSG=$(git log -1 --pretty=%B)
-          
-          # Check if this is a merge from a release branch
-          if echo "$COMMIT_MSG" | grep -qE "Merge.*release/"; then
-            echo "is_release_merge=true" >> $GITHUB_OUTPUT
-            echo "This is a merge from a release branch"
-          else
-            echo "is_release_merge=false" >> $GITHUB_OUTPUT
-            echo "This is a merge but not from a release branch, skipping promotion"
-          fi
-
       - name: Find latest prerelease and extract version
-        if: steps.check_merge.outputs.is_release_merge == 'true'
         id: find_version
         uses: actions/github-script@v7
         with:
@@ -57,14 +37,13 @@ jobs:
             const latestRC = releases.data.find(r => r.prerelease && r.tag_name.includes('-rc.'));
             
             if (!latestRC) {
-              console.log('No RC release found to promote');
               core.setFailed('No RC release found to promote');
               return;
             }
             
             console.log(`Found RC release: ${latestRC.tag_name}`);
             
-            // Extract stable version
+            // Extract stable version (e.g., v1.0.0-rc.1 -> v1.0.0)
             const stableTag = latestRC.tag_name.replace(/-rc\..*$/, '');
             console.log(`Will create stable release: ${stableTag}`);
             
@@ -73,13 +52,11 @@ jobs:
             core.setOutput('rc_release_id', latestRC.id);
 
       - name: Set up Go
-        if: steps.check_merge.outputs.is_release_merge == 'true'
         uses: actions/setup-go@v5
         with:
           go-version: "1.24"
 
       - name: Create stable tag
-        if: steps.check_merge.outputs.is_release_merge == 'true'
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
@@ -89,15 +66,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up QEMU
-        if: steps.check_merge.outputs.is_release_merge == 'true'
         uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
-        if: steps.check_merge.outputs.is_release_merge == 'true'
         uses: docker/setup-buildx-action@v3
 
       - name: Login to GitHub Container Registry
-        if: steps.check_merge.outputs.is_release_merge == 'true'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -105,7 +79,6 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Run GoReleaser for stable release
-        if: steps.check_merge.outputs.is_release_merge == 'true'
         uses: goreleaser/goreleaser-action@v6
         with:
           distribution: goreleaser
@@ -115,7 +88,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Delete RC release
-        if: steps.check_merge.outputs.is_release_merge == 'true'
         uses: actions/github-script@v7
         with:
           script: |
@@ -124,24 +96,19 @@ jobs:
             
             console.log(`Deleting RC release: ${rcTag}`);
             
-            // Delete the release
             await github.rest.repos.deleteRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,
               release_id: rcReleaseId
             });
             
-            // Delete the RC tag
             await github.rest.git.deleteRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
               ref: `tags/${rcTag}`
             });
-            
-            console.log(`Successfully deleted RC release and tag`);
 
-      - name: Create Release
-        id: create_release
+      - name: Create Final Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.find_version.outputs.stable_tag }}
@@ -150,4 +117,3 @@ jobs:
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
