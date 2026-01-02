@@ -12,11 +12,11 @@ dependencies between analyses and nested time windows (i.e. analysis can trigger
 ## ✨ Features
 
 - [ ] Orca Core:
-  - [x] Build cross-language algorithms and scale horizontally. [DOCS](https://demo.orc-a.io/docs)
-  - [x] Automatically handles algorithm dependencies and execution order. [DOCS](https://demo.orc-a.io/docs)
+  - [x] Build cross-language algorithms and scale horizontally. [DOCS](https://orc-a.io/docs)
+  - [x] Automatically handles algorithm dependencies and execution order. [DOCS](https://orc-a.io/docs)
   - [ ] Telemetry cache, so downstream analytics don't hammer the database for the same data.
 - [ ] Supported Storage Solutions
-  - [x] PostgreSQL. [DOCS](https://demo.orc-a.io/docs)
+  - [x] PostgreSQL. [DOCS](https://orc-a.io/docs)
   - [ ] MongoDB
   - [ ] BigQuery
   - [ ] RDS
@@ -28,7 +28,7 @@ dependencies between analyses and nested time windows (i.e. analysis can trigger
 
 ## Documentation
 
-Full documentation can be found at [demo.orc-a.io/docs](https://demo.orc-a.io/docs).
+Full documentation can be found at [orc-a.io/docs](https://orc-a.io/docs).
 
 ## 📄 License
 
