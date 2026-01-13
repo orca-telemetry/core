@@ -158,6 +158,18 @@ message AlgorithmDependency {
 
   // Runtime of the processor that the algorithm is associated with
   string processor_runtime = 4 [(buf.validate.field).required = true];
+
+  // A lookback field that specifies whether this dependency 
+  // depends on past results of this algorithm
+  oneof lookback {
+    option (buf.validate.oneof).required = false;
+
+    // Number of past results to depend on (if at all)
+    uint32 lookback_num = 5;
+
+    // Timeframe of past results to depend on (in milliseconds)
+    uint64 lookback_time_delta = 6;
+  }
 }
 
 enum ResultType {
