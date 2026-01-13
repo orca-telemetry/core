@@ -491,6 +491,7 @@ export interface ExecutionResult {
 export interface AlgorithmResult {
   algorithm?: Algorithm | undefined;
   result?: Result | undefined;
+  window?: Window | undefined;
 }
 
 export interface Status {
@@ -2029,7 +2030,7 @@ export const ExecutionResult: MessageFns<ExecutionResult> = {
 };
 
 function createBaseAlgorithmResult(): AlgorithmResult {
-  return { algorithm: undefined, result: undefined };
+  return { algorithm: undefined, result: undefined, window: undefined };
 }
 
 export const AlgorithmResult: MessageFns<AlgorithmResult> = {
@@ -2039,6 +2040,9 @@ export const AlgorithmResult: MessageFns<AlgorithmResult> = {
     }
     if (message.result !== undefined) {
       Result.encode(message.result, writer.uint32(18).fork()).join();
+    }
+    if (message.window !== undefined) {
+      Window.encode(message.window, writer.uint32(26).fork()).join();
     }
     return writer;
   },
@@ -2066,6 +2070,14 @@ export const AlgorithmResult: MessageFns<AlgorithmResult> = {
           message.result = Result.decode(reader, reader.uint32());
           continue;
         }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.window = Window.decode(reader, reader.uint32());
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -2079,6 +2091,7 @@ export const AlgorithmResult: MessageFns<AlgorithmResult> = {
     return {
       algorithm: isSet(object.algorithm) ? Algorithm.fromJSON(object.algorithm) : undefined,
       result: isSet(object.result) ? Result.fromJSON(object.result) : undefined,
+      window: isSet(object.window) ? Window.fromJSON(object.window) : undefined,
     };
   },
 
@@ -2089,6 +2102,9 @@ export const AlgorithmResult: MessageFns<AlgorithmResult> = {
     }
     if (message.result !== undefined) {
       obj.result = Result.toJSON(message.result);
+    }
+    if (message.window !== undefined) {
+      obj.window = Window.toJSON(message.window);
     }
     return obj;
   },
@@ -2103,6 +2119,9 @@ export const AlgorithmResult: MessageFns<AlgorithmResult> = {
       : undefined;
     message.result = (object.result !== undefined && object.result !== null)
       ? Result.fromPartial(object.result)
+      : undefined;
+    message.window = (object.window !== undefined && object.window !== null)
+      ? Window.fromPartial(object.window)
       : undefined;
     return message;
   },
