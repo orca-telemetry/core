@@ -294,7 +294,21 @@ export interface AlgorithmDependency {
     | string
     | undefined;
   /** Runtime of the processor that the algorithm is associated with */
-  processorRuntime?: string | undefined;
+  processorRuntime?:
+    | string
+    | undefined;
+  /**
+   * A lookback field that specifies whether this dependency
+   * depends on past results of this algorithm
+   */
+  lookback?:
+    | //
+    /** Number of past results to depend on (if at all) */
+    { $case: "lookbackNum"; value: number }
+    | //
+    /** Timeframe of past results to depend on (in milliseconds) */
+    { $case: "lookbackTimeDelta"; value: string }
+    | undefined;
 }
 
 /**
@@ -1039,7 +1053,7 @@ export const WindowEmitStatus: MessageFns<WindowEmitStatus> = {
 };
 
 function createBaseAlgorithmDependency(): AlgorithmDependency {
-  return { name: "", version: "", processorName: "", processorRuntime: "" };
+  return { name: "", version: "", processorName: "", processorRuntime: "", lookback: undefined };
 }
 
 export const AlgorithmDependency: MessageFns<AlgorithmDependency> = {
@@ -1055,6 +1069,14 @@ export const AlgorithmDependency: MessageFns<AlgorithmDependency> = {
     }
     if (message.processorRuntime !== undefined && message.processorRuntime !== "") {
       writer.uint32(34).string(message.processorRuntime);
+    }
+    switch (message.lookback?.$case) {
+      case "lookbackNum":
+        writer.uint32(40).uint32(message.lookback.value);
+        break;
+      case "lookbackTimeDelta":
+        writer.uint32(48).uint64(message.lookback.value);
+        break;
     }
     return writer;
   },
@@ -1098,6 +1120,22 @@ export const AlgorithmDependency: MessageFns<AlgorithmDependency> = {
           message.processorRuntime = reader.string();
           continue;
         }
+        case 5: {
+          if (tag !== 40) {
+            break;
+          }
+
+          message.lookback = { $case: "lookbackNum", value: reader.uint32() };
+          continue;
+        }
+        case 6: {
+          if (tag !== 48) {
+            break;
+          }
+
+          message.lookback = { $case: "lookbackTimeDelta", value: reader.uint64().toString() };
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1113,6 +1151,11 @@ export const AlgorithmDependency: MessageFns<AlgorithmDependency> = {
       version: isSet(object.version) ? globalThis.String(object.version) : "",
       processorName: isSet(object.processorName) ? globalThis.String(object.processorName) : "",
       processorRuntime: isSet(object.processorRuntime) ? globalThis.String(object.processorRuntime) : "",
+      lookback: isSet(object.lookbackNum)
+        ? { $case: "lookbackNum", value: globalThis.Number(object.lookbackNum) }
+        : isSet(object.lookbackTimeDelta)
+        ? { $case: "lookbackTimeDelta", value: globalThis.String(object.lookbackTimeDelta) }
+        : undefined,
     };
   },
 
@@ -1130,6 +1173,11 @@ export const AlgorithmDependency: MessageFns<AlgorithmDependency> = {
     if (message.processorRuntime !== undefined && message.processorRuntime !== "") {
       obj.processorRuntime = message.processorRuntime;
     }
+    if (message.lookback?.$case === "lookbackNum") {
+      obj.lookbackNum = Math.round(message.lookback.value);
+    } else if (message.lookback?.$case === "lookbackTimeDelta") {
+      obj.lookbackTimeDelta = message.lookback.value;
+    }
     return obj;
   },
 
@@ -1142,6 +1190,20 @@ export const AlgorithmDependency: MessageFns<AlgorithmDependency> = {
     message.version = object.version ?? "";
     message.processorName = object.processorName ?? "";
     message.processorRuntime = object.processorRuntime ?? "";
+    switch (object.lookback?.$case) {
+      case "lookbackNum": {
+        if (object.lookback?.value !== undefined && object.lookback?.value !== null) {
+          message.lookback = { $case: "lookbackNum", value: object.lookback.value };
+        }
+        break;
+      }
+      case "lookbackTimeDelta": {
+        if (object.lookback?.value !== undefined && object.lookback?.value !== null) {
+          message.lookback = { $case: "lookbackTimeDelta", value: object.lookback.value };
+        }
+        break;
+      }
+    }
     return message;
   },
 };

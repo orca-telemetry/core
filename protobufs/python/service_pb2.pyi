@@ -88,16 +88,20 @@ class WindowEmitStatus(_message.Message):
     def __init__(self, status: _Optional[_Union[WindowEmitStatus.StatusEnum, str]] = ...) -> None: ...
 
 class AlgorithmDependency(_message.Message):
-    __slots__ = ("name", "version", "processor_name", "processor_runtime")
+    __slots__ = ("name", "version", "processor_name", "processor_runtime", "lookback_num", "lookback_time_delta")
     NAME_FIELD_NUMBER: _ClassVar[int]
     VERSION_FIELD_NUMBER: _ClassVar[int]
     PROCESSOR_NAME_FIELD_NUMBER: _ClassVar[int]
     PROCESSOR_RUNTIME_FIELD_NUMBER: _ClassVar[int]
+    LOOKBACK_NUM_FIELD_NUMBER: _ClassVar[int]
+    LOOKBACK_TIME_DELTA_FIELD_NUMBER: _ClassVar[int]
     name: str
     version: str
     processor_name: str
     processor_runtime: str
-    def __init__(self, name: _Optional[str] = ..., version: _Optional[str] = ..., processor_name: _Optional[str] = ..., processor_runtime: _Optional[str] = ...) -> None: ...
+    lookback_num: int
+    lookback_time_delta: int
+    def __init__(self, name: _Optional[str] = ..., version: _Optional[str] = ..., processor_name: _Optional[str] = ..., processor_runtime: _Optional[str] = ..., lookback_num: _Optional[int] = ..., lookback_time_delta: _Optional[int] = ...) -> None: ...
 
 class Algorithm(_message.Message):
     __slots__ = ("name", "version", "window_type", "dependencies", "result_type", "description")
