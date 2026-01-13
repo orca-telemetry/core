@@ -336,6 +336,7 @@ message ExecutionResult {
 message AlgorithmResult {
   Algorithm algorithm = 1 [(buf.validate.field).required=true];
   Result result = 2 [(buf.validate.field).required=true];
+  Window window = 3 [(buf.validate.field).required=true];
 }
 
 message Status {

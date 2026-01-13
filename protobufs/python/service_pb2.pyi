@@ -186,12 +186,14 @@ class ExecutionResult(_message.Message):
     def __init__(self, exec_id: _Optional[str] = ..., algorithm_result: _Optional[_Union[AlgorithmResult, _Mapping]] = ...) -> None: ...
 
 class AlgorithmResult(_message.Message):
-    __slots__ = ("algorithm", "result")
+    __slots__ = ("algorithm", "result", "window")
     ALGORITHM_FIELD_NUMBER: _ClassVar[int]
     RESULT_FIELD_NUMBER: _ClassVar[int]
+    WINDOW_FIELD_NUMBER: _ClassVar[int]
     algorithm: Algorithm
     result: Result
-    def __init__(self, algorithm: _Optional[_Union[Algorithm, _Mapping]] = ..., result: _Optional[_Union[Result, _Mapping]] = ...) -> None: ...
+    window: Window
+    def __init__(self, algorithm: _Optional[_Union[Algorithm, _Mapping]] = ..., result: _Optional[_Union[Result, _Mapping]] = ..., window: _Optional[_Union[Window, _Mapping]] = ...) -> None: ...
 
 class Status(_message.Message):
     __slots__ = ("received", "message")
