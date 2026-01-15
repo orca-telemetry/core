@@ -70,8 +70,8 @@ func processTasks(
 	// get the environment
 	config := envs.GetConfig()
 
-	// for each stage, farm off processsings
-	slog.Info("execution plan", "executionPlan", executionPlan)
+	// for each stage, build processsings
+	slog.Debug("execution plan", "executionPlan", executionPlan)
 	for _, stage := range executionPlan.Stages {
 		for _, task := range stage.Tasks {
 			proc, ok := processorMap[task.ProcId]
@@ -97,7 +97,6 @@ func processTasks(
 					),
 				)
 			} else {
-
 				conn, err = grpc.NewClient(
 					proc.ConnectionString,
 					grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -105,9 +104,9 @@ func processTasks(
 			}
 			if err != nil {
 				slog.Error("could not connect to processor", "proc_id", task.ProcId, "error", err)
-				return err
+				return fmt.Errorf("could not contact processor: %w", err)
 			}
-			// IMPORTANT: close conn when done (not deferred inside a loop)
+			// WARN: close conn when done (not deferred inside a loop)
 			defer func(conn *grpc.ClientConn) {
 				if err := conn.Close(); err != nil {
 					slog.Warn("error closing gRPC connection", "error", err)
@@ -126,7 +125,8 @@ func processTasks(
 					"processor",
 					proc,
 				)
-				return err
+
+				return fmt.Errorf("issue contacting processor: %w", err)
 			}
 			if healthCheckResponse.Status != pb.HealthCheckResponse_STATUS_SERVING {
 				slog.Error(
@@ -136,7 +136,7 @@ func processTasks(
 					"message",
 					healthCheckResponse.Message,
 				)
-				return err
+				return fmt.Errorf("cannot execute stage, processor not serving: %w", err)
 			}
 
 			// build list of affected Algorithms
@@ -163,7 +163,7 @@ func processTasks(
 				})
 
 				// determine which results need to be included
-				for _, algoId := range node.AlgoDepIds() {
+				for algoId := range node.AlgoDepIds() {
 					algoDepsResults = append(algoDepsResults, resultMap[algoId].AlgorithmResult)
 				}
 			}
