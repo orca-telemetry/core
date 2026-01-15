@@ -7,30 +7,34 @@ import (
 
 func TestBuildPlan(t *testing.T) {
 	tests := []struct {
-		name           string
-		algoExecPath   []string
-		windowExecPath []string
-		procExecPath   []string
-		targetWindowId int64
-		want           Plan
-		wantErr        bool
+		name               string
+		algoExecPath       []string
+		windowExecPath     []string
+		procExecPath       []string
+		lookbackCounts     []string
+		lookbackTimedeltas []string
+		targetWindowId     int64
+		want               Plan
+		wantErr            bool
 	}{
 		{
-			name:           "simple straight line",
-			algoExecPath:   []string{"1.2.3"},
-			windowExecPath: []string{"1.1.1"},
-			procExecPath:   []string{"1.1.1"},
-			targetWindowId: 1,
+			name:               "simple straight line",
+			algoExecPath:       []string{"1.2.3"},
+			windowExecPath:     []string{"1.1.1"},
+			procExecPath:       []string{"1.1.1"},
+			lookbackCounts:     []string{"0.0.0"},
+			lookbackTimedeltas: []string{"0.0.0"},
+			targetWindowId:     1,
 			want: Plan{
 				Stages: []Stage{
 					{Tasks: []ProcessorTask{
 						{ProcId: 1, Nodes: []Node{{algoId: 1, procId: 1, algoDeps: nil}}},
 					}},
 					{Tasks: []ProcessorTask{
-						{ProcId: 1, Nodes: []Node{{algoId: 2, procId: 1, algoDeps: []AlgoDep{{id: 1}}}}},
+						{ProcId: 1, Nodes: []Node{{algoId: 2, procId: 1, algoDeps: []AlgoDep{{algoId: 1}}}}},
 					}},
 					{Tasks: []ProcessorTask{
-						{ProcId: 1, Nodes: []Node{{algoId: 3, procId: 1, algoDeps: []AlgoDep{{id: 2}}}}},
+						{ProcId: 1, Nodes: []Node{{algoId: 3, procId: 1, algoDeps: []AlgoDep{{algoId: 2}}}}},
 					}},
 				},
 				AffectedProcessors: []int64{1},
@@ -38,11 +42,13 @@ func TestBuildPlan(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:           "parallel roots",
-			algoExecPath:   []string{"1", "2"},
-			windowExecPath: []string{"1", "1"},
-			procExecPath:   []string{"1", "2"},
-			targetWindowId: 1,
+			name:               "parallel roots",
+			algoExecPath:       []string{"1", "2"},
+			windowExecPath:     []string{"1", "1"},
+			procExecPath:       []string{"1", "2"},
+			lookbackCounts:     []string{"0", "0"},
+			lookbackTimedeltas: []string{"0", "0"},
+			targetWindowId:     1,
 			want: Plan{
 				Stages: []Stage{
 					{Tasks: []ProcessorTask{
@@ -55,11 +61,13 @@ func TestBuildPlan(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:           "fork and join",
-			algoExecPath:   []string{"1.2.4", "1.3.4"},
-			windowExecPath: []string{"1.1.1", "1.1.1"},
-			procExecPath:   []string{"1.2.3", "1.2.3"},
-			targetWindowId: 1,
+			name:               "fork and join",
+			algoExecPath:       []string{"1.2.4", "1.3.4"},
+			windowExecPath:     []string{"1.1.1", "1.1.1"},
+			procExecPath:       []string{"1.2.3", "1.2.3"},
+			lookbackCounts:     []string{"0.0.0", "0.0.0"},
+			lookbackTimedeltas: []string{"0.0.0", "0.0.0"},
+			targetWindowId:     1,
 			want: Plan{
 				Stages: []Stage{
 					{Tasks: []ProcessorTask{
@@ -67,13 +75,13 @@ func TestBuildPlan(t *testing.T) {
 					}},
 					{Tasks: []ProcessorTask{
 						{ProcId: 2, Nodes: []Node{
-							{algoId: 2, procId: 2, algoDeps: []AlgoDep{{id: 1}}},
-							{algoId: 3, procId: 2, algoDeps: []AlgoDep{{id: 1}}},
+							{algoId: 2, procId: 2, algoDeps: []AlgoDep{{algoId: 1}}},
+							{algoId: 3, procId: 2, algoDeps: []AlgoDep{{algoId: 1}}},
 						}},
 					}},
 					{Tasks: []ProcessorTask{
 						{ProcId: 3, Nodes: []Node{
-							{algoId: 4, procId: 3, algoDeps: []AlgoDep{{id: 2}, {id: 3}}},
+							{algoId: 4, procId: 3, algoDeps: []AlgoDep{{algoId: 2}, {algoId: 3}}},
 						}},
 					}},
 				},
@@ -82,22 +90,26 @@ func TestBuildPlan(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name:           "cycle detection",
-			algoExecPath:   []string{"1.2", "2.1"},
-			windowExecPath: []string{"1.1", "1.1"},
-			procExecPath:   []string{"1.1", "1.1"},
-			targetWindowId: 1,
-			want:           Plan{},
-			wantErr:        true,
+			name:               "cycle detection",
+			algoExecPath:       []string{"1.2", "2.1"},
+			windowExecPath:     []string{"1.1", "1.1"},
+			procExecPath:       []string{"1.1", "1.1"},
+			lookbackCounts:     []string{"0.0", "0.0"},
+			lookbackTimedeltas: []string{"0.0", "0.0"},
+			targetWindowId:     1,
+			want:               Plan{},
+			wantErr:            true,
 		},
 		{
-			name:           "empty inputs",
-			algoExecPath:   []string{},
-			windowExecPath: []string{},
-			procExecPath:   []string{},
-			targetWindowId: 1,
-			want:           Plan{Stages: nil},
-			wantErr:        false,
+			name:               "empty inputs",
+			algoExecPath:       []string{},
+			windowExecPath:     []string{},
+			procExecPath:       []string{},
+			lookbackCounts:     []string{},
+			lookbackTimedeltas: []string{},
+			targetWindowId:     1,
+			want:               Plan{Stages: nil},
+			wantErr:            false,
 		},
 		{
 			name: "complex DAG",
@@ -116,7 +128,9 @@ func TestBuildPlan(t *testing.T) {
 				"1.2.3",   // Node 3 (proc 1) -> Node 4 (proc 2) -> Node 5 (proc 3)
 				"4.5.5.6", // Node 6 (proc 4) -> Node 7 (proc 5) -> Node 8 (proc 5) -> Node 9 (proc 6)
 			},
-			targetWindowId: 1,
+			lookbackCounts:     []string{"0.0.0", "0.0.0", "0.0.0.0"},
+			lookbackTimedeltas: []string{"0.0.0", "0.0.0", "0.0.0.0"},
+			targetWindowId:     1,
 			want: Plan{
 				Stages: []Stage{
 					{Tasks: []ProcessorTask{
@@ -130,24 +144,24 @@ func TestBuildPlan(t *testing.T) {
 					}},
 					{Tasks: []ProcessorTask{
 						{ProcId: 2, Nodes: []Node{
-							{algoId: 2, procId: 2, algoDeps: []AlgoDep{{id: 1}}},
-							{algoId: 4, procId: 2, algoDeps: []AlgoDep{{id: 3}}},
+							{algoId: 2, procId: 2, algoDeps: []AlgoDep{{algoId: 1, lookback: Lookback{count: 0, timedelta: 0}}}},
+							{algoId: 4, procId: 2, algoDeps: []AlgoDep{{algoId: 3, lookback: Lookback{count: 0, timedelta: 0}}}},
 						}},
 						{ProcId: 5, Nodes: []Node{
-							{algoId: 7, procId: 5, algoDeps: []AlgoDep{{id: 6}}},
+							{algoId: 7, procId: 5, algoDeps: []AlgoDep{{algoId: 6, lookback: Lookback{count: 0, timedelta: 0}}}},
 						}},
 					}},
 					{Tasks: []ProcessorTask{
 						{ProcId: 3, Nodes: []Node{
-							{algoId: 5, procId: 3, algoDeps: []AlgoDep{{id: 2}, {id: 4}}},
+							{algoId: 5, procId: 3, algoDeps: []AlgoDep{{algoId: 2, lookback: Lookback{count: 0, timedelta: 0}}, {algoId: 4, lookback: Lookback{count: 0, timedelta: 0}}}},
 						}},
 						{ProcId: 5, Nodes: []Node{
-							{algoId: 8, procId: 5, algoDeps: []AlgoDep{{id: 7}}},
+							{algoId: 8, procId: 5, algoDeps: []AlgoDep{{algoId: 7, lookback: Lookback{count: 0, timedelta: 0}}}},
 						}},
 					}},
 					{Tasks: []ProcessorTask{
 						{ProcId: 6, Nodes: []Node{
-							{algoId: 9, procId: 6, algoDeps: []AlgoDep{{id: 8}}},
+							{algoId: 9, procId: 6, algoDeps: []AlgoDep{{algoId: 8, lookback: Lookback{count: 0, timedelta: 0}}}},
 						}},
 					}},
 				},
@@ -163,6 +177,8 @@ func TestBuildPlan(t *testing.T) {
 				tt.algoExecPath,
 				tt.windowExecPath,
 				tt.procExecPath,
+				tt.lookbackCounts,
+				tt.lookbackTimedeltas,
 				tt.targetWindowId,
 			)
 

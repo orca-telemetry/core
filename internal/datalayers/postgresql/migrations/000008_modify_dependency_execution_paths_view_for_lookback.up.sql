@@ -21,8 +21,8 @@ search_tree AS (
         a.id::VARCHAR AS algo_id_path,
         a.processor_id::VARCHAR AS proc_id_path,
         a.window_type_id::VARCHAR as window_type_id_path,
-        ''::VARCHAR AS lookback_count_path,
-        ''::VARCHAR AS lookback_timedelta_path
+        '0'::VARCHAR AS lookback_count_path,
+        '0'::VARCHAR AS lookback_timedelta_path
     FROM
         algorithm a
     WHERE
@@ -40,12 +40,12 @@ search_tree AS (
         st.proc_id_path || '.' || ad.to_processor_id::VARCHAR,
         st.window_type_id_path || '.' || ad.to_window_type_id::VARCHAR,
         CASE 
-            WHEN st.lookback_count_path = '' THEN COALESCE(ad.lookback_count::VARCHAR, '')
-            ELSE st.lookback_count_path || '.' || COALESCE(ad.lookback_count::VARCHAR, '')
+            WHEN st.lookback_count_path = '0' THEN COALESCE(ad.lookback_count::VARCHAR, '0')
+            ELSE st.lookback_count_path || '.' || COALESCE(ad.lookback_count::VARCHAR, '0')
         END,
         CASE 
-            WHEN st.lookback_timedelta_path = '' THEN COALESCE(ad.lookback_timedelta::VARCHAR, '')
-            ELSE st.lookback_timedelta_path || '.' || COALESCE(ad.lookback_timedelta::VARCHAR, '')
+            WHEN st.lookback_timedelta_path = '0' THEN COALESCE(ad.lookback_timedelta::VARCHAR, '0')
+            ELSE st.lookback_timedelta_path || '.' || COALESCE(ad.lookback_timedelta::VARCHAR, '0')
         END
     FROM
         algorithm_dependency ad
