@@ -24,13 +24,13 @@ func TestBuildPlan(t *testing.T) {
 			want: Plan{
 				Stages: []Stage{
 					{Tasks: []ProcessorTask{
-						{ProcId: 1, Nodes: []Node{{algoId: 1, procId: 1, algoDepIds: nil}}},
+						{ProcId: 1, Nodes: []Node{{algoId: 1, procId: 1, algoDeps: nil}}},
 					}},
 					{Tasks: []ProcessorTask{
-						{ProcId: 1, Nodes: []Node{{algoId: 2, procId: 1, algoDepIds: []int64{1}}}},
+						{ProcId: 1, Nodes: []Node{{algoId: 2, procId: 1, algoDeps: []AlgoDep{{id: 1}}}}},
 					}},
 					{Tasks: []ProcessorTask{
-						{ProcId: 1, Nodes: []Node{{algoId: 3, procId: 1, algoDepIds: []int64{2}}}},
+						{ProcId: 1, Nodes: []Node{{algoId: 3, procId: 1, algoDeps: []AlgoDep{{id: 2}}}}},
 					}},
 				},
 				AffectedProcessors: []int64{1},
@@ -46,8 +46,8 @@ func TestBuildPlan(t *testing.T) {
 			want: Plan{
 				Stages: []Stage{
 					{Tasks: []ProcessorTask{
-						{ProcId: 1, Nodes: []Node{{algoId: 1, procId: 1, algoDepIds: nil}}},
-						{ProcId: 2, Nodes: []Node{{algoId: 2, procId: 2, algoDepIds: nil}}},
+						{ProcId: 1, Nodes: []Node{{algoId: 1, procId: 1, algoDeps: nil}}},
+						{ProcId: 2, Nodes: []Node{{algoId: 2, procId: 2, algoDeps: nil}}},
 					}},
 				},
 				AffectedProcessors: []int64{1, 2},
@@ -63,17 +63,17 @@ func TestBuildPlan(t *testing.T) {
 			want: Plan{
 				Stages: []Stage{
 					{Tasks: []ProcessorTask{
-						{ProcId: 1, Nodes: []Node{{algoId: 1, procId: 1, algoDepIds: nil}}},
+						{ProcId: 1, Nodes: []Node{{algoId: 1, procId: 1, algoDeps: nil}}},
 					}},
 					{Tasks: []ProcessorTask{
 						{ProcId: 2, Nodes: []Node{
-							{algoId: 2, procId: 2, algoDepIds: []int64{1}},
-							{algoId: 3, procId: 2, algoDepIds: []int64{1}},
+							{algoId: 2, procId: 2, algoDeps: []AlgoDep{{id: 1}}},
+							{algoId: 3, procId: 2, algoDeps: []AlgoDep{{id: 1}}},
 						}},
 					}},
 					{Tasks: []ProcessorTask{
 						{ProcId: 3, Nodes: []Node{
-							{algoId: 4, procId: 3, algoDepIds: []int64{2, 3}},
+							{algoId: 4, procId: 3, algoDeps: []AlgoDep{{id: 2}, {id: 3}}},
 						}},
 					}},
 				},
@@ -121,33 +121,33 @@ func TestBuildPlan(t *testing.T) {
 				Stages: []Stage{
 					{Tasks: []ProcessorTask{
 						{ProcId: 1, Nodes: []Node{
-							{algoId: 1, procId: 1, algoDepIds: nil},
-							{algoId: 3, procId: 1, algoDepIds: nil},
+							{algoId: 1, procId: 1, algoDeps: nil},
+							{algoId: 3, procId: 1, algoDeps: nil},
 						}},
 						{ProcId: 4, Nodes: []Node{
-							{algoId: 6, procId: 4, algoDepIds: nil},
+							{algoId: 6, procId: 4, algoDeps: nil},
 						}},
 					}},
 					{Tasks: []ProcessorTask{
 						{ProcId: 2, Nodes: []Node{
-							{algoId: 2, procId: 2, algoDepIds: []int64{1}},
-							{algoId: 4, procId: 2, algoDepIds: []int64{3}},
+							{algoId: 2, procId: 2, algoDeps: []AlgoDep{{id: 1}}},
+							{algoId: 4, procId: 2, algoDeps: []AlgoDep{{id: 3}}},
 						}},
 						{ProcId: 5, Nodes: []Node{
-							{algoId: 7, procId: 5, algoDepIds: []int64{6}},
+							{algoId: 7, procId: 5, algoDeps: []AlgoDep{{id: 6}}},
 						}},
 					}},
 					{Tasks: []ProcessorTask{
 						{ProcId: 3, Nodes: []Node{
-							{algoId: 5, procId: 3, algoDepIds: []int64{2, 4}},
+							{algoId: 5, procId: 3, algoDeps: []AlgoDep{{id: 2}, {id: 4}}},
 						}},
 						{ProcId: 5, Nodes: []Node{
-							{algoId: 8, procId: 5, algoDepIds: []int64{7}},
+							{algoId: 8, procId: 5, algoDeps: []AlgoDep{{id: 7}}},
 						}},
 					}},
 					{Tasks: []ProcessorTask{
 						{ProcId: 6, Nodes: []Node{
-							{algoId: 9, procId: 6, algoDepIds: []int64{8}},
+							{algoId: 9, procId: 6, algoDeps: []AlgoDep{{id: 8}}},
 						}},
 					}},
 				},

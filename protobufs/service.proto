@@ -316,6 +316,13 @@ message ExecutionRequest {
   // The window that triggered the algorithm 
   Window window = 2 [(buf.validate.field).required = true];
   
+  message _ExecutionPacket {
+    // Results from dependant algorithms
+    repeated AlgorithmResult algorithm_results = 3;
+
+    // The algorithm to execute
+    Algorithm algorithms = 4;
+  }
   // Results from dependant algorithms
   repeated AlgorithmResult algorithm_results = 3;
 

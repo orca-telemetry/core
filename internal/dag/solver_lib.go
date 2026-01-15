@@ -2,6 +2,7 @@ package dag
 
 import (
 	"fmt"
+	"iter"
 	"slices"
 	"sort"
 	"strconv"
@@ -11,14 +12,39 @@ import (
 	"gonum.org/v1/gonum/graph/simple"
 )
 
+type lookback string
+
+const CountLookback lookback = "CountLookback"
+const TimedeltaLookback lookback = "TimedeltaLookback"
+
+type AlgoDep struct {
+	id                int64
+	lookbackCount     uint32
+	lookbackTimedelta uint32
+}
+
+func (d AlgoDep) NeedsLookback() bool {
+	return d.lookbackCount > 0 || d.lookbackTimedelta > 0
+}
+
+func (d AlgoDep) LookbackType() (error, lookback) {
+	if d.lookbackCount > 0 {
+		return nil, CountLookback
+	}
+	if d.lookbackTimedelta > 0 {
+		return nil, TimedeltaLookback
+	}
+	return fmt.Errorf("algodep with id %d does not require lookback", d.id), ""
+}
+
 // Node represents an algorithm in the DAG
 type Node struct {
-	id         int64
-	algoId     int64
-	procId     int64
-	windowId   int64
-	algoDepIds []int64
-	pathIdx    int
+	id       int64
+	algoId   int64
+	procId   int64
+	windowId int64
+	algoDeps []AlgoDep
+	pathIdx  int
 }
 
 // ID satisfies the graph.Node interface.
@@ -30,8 +56,14 @@ func (n Node) AlgoId() int64 {
 	return n.algoId
 }
 
-func (n Node) AlgoDepIds() []int64 {
-	return n.algoDepIds
+func (n Node) AlgoDepIds() iter.Seq[int64] {
+	return func(yield func(int64) bool) {
+		for _, dep := range n.algoDeps {
+			if !yield(dep.id) {
+				return
+			}
+		}
+	}
 }
 
 // ProcessorTask represents a set of tasks (nodes) assigned to a single processor
@@ -206,14 +238,25 @@ func BuildPlan(
 				if !ok {
 					panic(ok)
 				}
-				if node.algoDepIds == nil {
-					node.algoDepIds = []int64{_currNode_v2.algoId}
+				if node.algoDeps == nil {
+					// FIXME: include the lookback status
+					node.algoDeps = []AlgoDep{{id: _currNode_v2.algoId}}
 				} else {
-					node.algoDepIds = append(node.algoDepIds, _currNode_v2.algoId)
+					// FIXME: include the lookback status
+					node.algoDeps = append(node.algoDeps, AlgoDep{
+						id: _currNode_v2.algoId})
 				}
 			}
 			// sort the algo deps within the node
-			slices.Sort(node.algoDepIds)
+			slices.SortFunc(node.algoDeps, func(a, b AlgoDep) int {
+				if a.id < b.id {
+					return -1
+				}
+				if a.id > b.id {
+					return 1
+				}
+				return 0
+			})
 
 			taskMap[node.procId] = append(taskMap[node.procId], node)
 		}

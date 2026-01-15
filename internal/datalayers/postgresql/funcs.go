@@ -274,6 +274,8 @@ func (d *Datalayer) addOverwriteAlgorithmDependency(
 					ToAlgorithmVersion:   algo.GetVersion(),
 					ToProcessorName:      proc.GetName(),
 					ToProcessorRuntime:   proc.GetRuntime(),
+					LookbackCount:        pgtype.Int8{Int64: int64(algoDependentOn.GetLookbackNum()), Valid: true},
+					LookbackTimedelta:    pgtype.Int8{Int64: int64(algoDependentOn.GetLookbackTimeDelta()), Valid: true},
 				})
 				if err != nil {
 					return fmt.Errorf("issue constructing algorithm dependency: %v", err)

@@ -122,20 +122,26 @@ INSERT INTO algorithm_dependency (
   from_window_type_id,
   to_window_type_id,
   from_processor_id,
-  to_processor_id
+  to_processor_id,
+  lookback_count,
+  lookback_timedelta
 ) VALUES (
   (SELECT id FROM from_algo LIMIT 1),
   (SELECT id FROM to_algo LIMIT 1),
   (SELECT window_type_id FROM from_algo LIMIT 1),
   (SELECT window_type_id FROM to_algo LIMIT 1),
   (SELECT processor_id FROM from_algo LIMIT 1),
-  (SELECT processor_id FROM to_algo LIMIT 1)
+  (SELECT processor_id FROM to_algo LIMIT 1),
+  sqlc.arg('lookback_count'),
+  sqlc.arg('lookback_timedelta')
 ) ON CONFLICT (from_algorithm_id, to_algorithm_id) DO UPDATE
   SET
     from_window_type_id = excluded.from_window_type_id,
     to_window_type_id = excluded.to_window_type_id,
     from_processor_id = excluded.from_processor_id,
-    to_processor_id = excluded.to_processor_id;
+    to_processor_id = excluded.to_processor_id,
+    lookback_count = excluded.lookback_count,
+    lookback_timedelta = excluded.lookback_timedelta;
 
 -- name: ReadFromAlgorithmDependencies :many
 WITH from_algo AS (
