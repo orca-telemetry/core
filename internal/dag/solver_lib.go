@@ -17,24 +17,28 @@ type lookback string
 const CountLookback lookback = "CountLookback"
 const TimedeltaLookback lookback = "TimedeltaLookback"
 
+type Lookback struct {
+	count     int
+	timedelta int
+}
+
 type AlgoDep struct {
-	id                int64
-	lookbackCount     uint32
-	lookbackTimedelta uint32
+	algoId   int64
+	lookback Lookback
 }
 
 func (d AlgoDep) NeedsLookback() bool {
-	return d.lookbackCount > 0 || d.lookbackTimedelta > 0
+	return d.lookback.count > 0 || d.lookback.timedelta > 0
 }
 
 func (d AlgoDep) LookbackType() (error, lookback) {
-	if d.lookbackCount > 0 {
+	if d.lookback.count > 0 {
 		return nil, CountLookback
 	}
-	if d.lookbackTimedelta > 0 {
+	if d.lookback.timedelta > 0 {
 		return nil, TimedeltaLookback
 	}
-	return fmt.Errorf("algodep with id %d does not require lookback", d.id), ""
+	return fmt.Errorf("algodep with id %d does not require lookback", d.algoId), ""
 }
 
 // Node represents an algorithm in the DAG
@@ -59,7 +63,7 @@ func (n Node) AlgoId() int64 {
 func (n Node) AlgoDepIds() iter.Seq[int64] {
 	return func(yield func(int64) bool) {
 		for _, dep := range n.algoDeps {
-			if !yield(dep.id) {
+			if !yield(dep.algoId) {
 				return
 			}
 		}
@@ -142,43 +146,61 @@ func BuildPlan(
 	algoExecPaths []string,
 	windowExecPaths []string,
 	procExecPaths []string,
+	lookbackCounts []string,
+	lookbackTimedeltas []string,
 	targetWindowId int64,
 ) (Plan, error) {
-	if len(algoExecPaths) != len(windowExecPaths) || len(windowExecPaths) != len(procExecPaths) {
+	if len(algoExecPaths) != len(windowExecPaths) ||
+		len(windowExecPaths) != len(procExecPaths) ||
+		len(procExecPaths) != len(lookbackCounts) ||
+		len(lookbackCounts) != len(lookbackTimedeltas) {
 		return Plan{}, fmt.Errorf(
-			"number of graph paths do not match: algo=%d, window=%d, proc=%d",
+			"number of graph paths do not match: algo=%d, window=%d, proc=%d, lookbackCounts=%d,lookbackTimedeltas=%d",
 			len(algoExecPaths),
 			len(windowExecPaths),
 			len(procExecPaths),
+			len(lookbackCounts),
+			len(lookbackTimedeltas),
 		)
 	}
 
 	g := simple.NewDirectedGraph()
 	nodeMap := make(map[int64]Node) // map of algoIDs to nodes
+
+	lookbackMap := make(map[string]Lookback) // map of edges (<algo_from_id>.<algo_to_id>) to lookback requirements
 	var nextId int64 = 1
 
 	for pathIdx, algoPath := range algoExecPaths {
 		algoSegments := splitPath(algoPath)
 		procSegments := splitPath(procExecPaths[pathIdx])
 		windowSegments := splitPath(windowExecPaths[pathIdx])
+		lookbackCountSegments := splitPath(lookbackCounts[pathIdx])
+		lookbackTimedeltas := splitPath(lookbackTimedeltas[pathIdx])
 
 		if len(algoSegments) != len(windowSegments) ||
-			len(windowSegments) != len(procSegments) {
+			len(windowSegments) != len(procSegments) ||
+			len(procSegments) != len(lookbackCountSegments) ||
+			len(lookbackCountSegments) != len(lookbackTimedeltas) {
 			return Plan{}, fmt.Errorf(
-				"number of processor segments do not match: algo=%d, window=%d, proc=%d",
+				"number of processor segments do not match: algo=%d, window=%d, proc=%d, lookbackCount=%d, lookbackTd=%d",
 				len(algoSegments),
 				len(windowSegments),
 				len(procSegments),
+				len(lookbackCountSegments),
+				len(lookbackTimedeltas),
 			)
 		}
 
-		var pathWindowMap map[int64]int64 // <<<<< added here
+		var pathWindowMap map[int64]int64
 		var prevNode Node
 
 		for ii, algoIdStr := range algoSegments {
 			algoId := mustAtoi(algoIdStr)
 			procId := mustAtoi(procSegments[ii])
 			windowId := mustAtoi(windowSegments[ii])
+			lookbackCount := mustAtoi(lookbackCountSegments[ii])
+			lookbackTd := mustAtoi(lookbackTimedeltas[ii])
+
 			if pathWindowMap == nil {
 				pathWindowMap = make(map[int64]int64)
 			}
@@ -209,6 +231,14 @@ func BuildPlan(
 			}
 
 			if prevNode.id != 0 {
+				_edgeStr := fmt.Sprintf("%d.%d", prevNode.algoId, node.algoId)
+				if _, ok := lookbackMap[_edgeStr]; ok { // the edge should not be populated
+					return Plan{}, fmt.Errorf("duplicate lookback paramaters found beteween algoId: %d and algoId: %d", prevNode.algoId, node.algoId)
+				}
+				lookbackMap[_edgeStr] = Lookback{
+					count:     lookbackCount,
+					timedelta: lookbackTd,
+				}
 				edge := g.NewEdge(prevNode, node)
 				g.SetEdge(edge)
 			}
@@ -222,14 +252,14 @@ func BuildPlan(
 	}
 
 	var plan Plan
-
+	var _edgeStr string
 	for _, layer := range layers {
 		taskMap := make(map[int64][]Node)
 
 		for _, gn := range layer {
 			node := gn.(Node)
 
-			// modify the node with the nodes dependencies
+			// modify the node with the nodes' dependencies
 			nodes := g.To(node.ID())
 			for range nodes.Len() {
 				nodes.Next()
@@ -238,21 +268,26 @@ func BuildPlan(
 				if !ok {
 					panic(ok)
 				}
+
+				// extract the lookback configuration of the edge
+				_edgeStr = fmt.Sprintf("%d.%d", _currNode_v2.algoId, node.algoId)
+				lookbackConfig, ok := lookbackMap[_edgeStr]
+				if !ok {
+					return Plan{}, fmt.Errorf("could not find edge lookback settings between algoId: %d and algoId: %d", node.algoId, _currNode_v2.algoId)
+				}
 				if node.algoDeps == nil {
-					// FIXME: include the lookback status
-					node.algoDeps = []AlgoDep{{id: _currNode_v2.algoId}}
+					node.algoDeps = []AlgoDep{{algoId: _currNode_v2.algoId, lookback: lookbackConfig}}
 				} else {
-					// FIXME: include the lookback status
 					node.algoDeps = append(node.algoDeps, AlgoDep{
-						id: _currNode_v2.algoId})
+						algoId: _currNode_v2.algoId, lookback: lookbackConfig})
 				}
 			}
 			// sort the algo deps within the node
 			slices.SortFunc(node.algoDeps, func(a, b AlgoDep) int {
-				if a.id < b.id {
+				if a.algoId < b.algoId {
 					return -1
 				}
-				if a.id > b.id {
+				if a.algoId > b.algoId {
 					return 1
 				}
 				return 0
