@@ -153,29 +153,43 @@ class ProcessorRegistration(_message.Message):
     project_name: str
     def __init__(self, name: _Optional[str] = ..., runtime: _Optional[str] = ..., connection_str: _Optional[str] = ..., supported_algorithms: _Optional[_Iterable[_Union[Algorithm, _Mapping]]] = ..., project_name: _Optional[str] = ...) -> None: ...
 
-class ProcessingTask(_message.Message):
-    __slots__ = ("task_id", "algorithm", "window", "dependency_results")
-    TASK_ID_FIELD_NUMBER: _ClassVar[int]
-    ALGORITHM_FIELD_NUMBER: _ClassVar[int]
+class AlgorithmDependencyResultRow(_message.Message):
+    __slots__ = ("result", "window")
+    RESULT_FIELD_NUMBER: _ClassVar[int]
     WINDOW_FIELD_NUMBER: _ClassVar[int]
-    DEPENDENCY_RESULTS_FIELD_NUMBER: _ClassVar[int]
-    task_id: str
-    algorithm: Algorithm
+    result: Result
     window: Window
-    dependency_results: _containers.RepeatedCompositeFieldContainer[Result]
-    def __init__(self, task_id: _Optional[str] = ..., algorithm: _Optional[_Union[Algorithm, _Mapping]] = ..., window: _Optional[_Union[Window, _Mapping]] = ..., dependency_results: _Optional[_Iterable[_Union[Result, _Mapping]]] = ...) -> None: ...
+    def __init__(self, result: _Optional[_Union[Result, _Mapping]] = ..., window: _Optional[_Union[Window, _Mapping]] = ...) -> None: ...
+
+class AlgorithmDependencyResult(_message.Message):
+    __slots__ = ("algorithm", "result")
+    ALGORITHM_FIELD_NUMBER: _ClassVar[int]
+    RESULT_FIELD_NUMBER: _ClassVar[int]
+    algorithm: Algorithm
+    result: _containers.RepeatedCompositeFieldContainer[AlgorithmDependencyResultRow]
+    def __init__(self, algorithm: _Optional[_Union[Algorithm, _Mapping]] = ..., result: _Optional[_Iterable[_Union[AlgorithmDependencyResultRow, _Mapping]]] = ...) -> None: ...
+
+class ExecuteAlgorithm(_message.Message):
+    __slots__ = ("algorithm", "dependency")
+    ALGORITHM_FIELD_NUMBER: _ClassVar[int]
+    DEPENDENCY_FIELD_NUMBER: _ClassVar[int]
+    algorithm: Algorithm
+    dependency: _containers.RepeatedCompositeFieldContainer[AlgorithmDependencyResult]
+    def __init__(self, algorithm: _Optional[_Union[Algorithm, _Mapping]] = ..., dependency: _Optional[_Iterable[_Union[AlgorithmDependencyResult, _Mapping]]] = ...) -> None: ...
 
 class ExecutionRequest(_message.Message):
-    __slots__ = ("exec_id", "window", "algorithm_results", "algorithms")
+    __slots__ = ("exec_id", "window", "algorithm_results", "algorithms", "algorithm_executions")
     EXEC_ID_FIELD_NUMBER: _ClassVar[int]
     WINDOW_FIELD_NUMBER: _ClassVar[int]
     ALGORITHM_RESULTS_FIELD_NUMBER: _ClassVar[int]
     ALGORITHMS_FIELD_NUMBER: _ClassVar[int]
+    ALGORITHM_EXECUTIONS_FIELD_NUMBER: _ClassVar[int]
     exec_id: str
     window: Window
     algorithm_results: _containers.RepeatedCompositeFieldContainer[AlgorithmResult]
     algorithms: _containers.RepeatedCompositeFieldContainer[Algorithm]
-    def __init__(self, exec_id: _Optional[str] = ..., window: _Optional[_Union[Window, _Mapping]] = ..., algorithm_results: _Optional[_Iterable[_Union[AlgorithmResult, _Mapping]]] = ..., algorithms: _Optional[_Iterable[_Union[Algorithm, _Mapping]]] = ...) -> None: ...
+    algorithm_executions: _containers.RepeatedCompositeFieldContainer[ExecuteAlgorithm]
+    def __init__(self, exec_id: _Optional[str] = ..., window: _Optional[_Union[Window, _Mapping]] = ..., algorithm_results: _Optional[_Iterable[_Union[AlgorithmResult, _Mapping]]] = ..., algorithms: _Optional[_Iterable[_Union[Algorithm, _Mapping]]] = ..., algorithm_executions: _Optional[_Iterable[_Union[ExecuteAlgorithm, _Mapping]]] = ...) -> None: ...
 
 class ExecutionResult(_message.Message):
     __slots__ = ("exec_id", "algorithm_result")

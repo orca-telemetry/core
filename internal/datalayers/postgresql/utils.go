@@ -163,8 +163,29 @@ func processTasks(
 				})
 
 				// determine which results need to be included
-				for algoId := range node.AlgoDepIds() {
-					algoDepsResults = append(algoDepsResults, resultMap[algoId].AlgorithmResult)
+				for algo := range node.AlgoDeps() {
+					// FIXME: include the logic to look back here
+					// if the algorithm has a lookback specified, then get
+					// that many results on top of the result in the current
+					// execution path
+					if algo.Lookback.Count > 0 {
+						results, err := d.queries.ReadResultsForAlgorithmByCount(ctx, ReadResultsForAlgorithmByCountParams{
+							AlgorithmID: pgtype.Int8{Int64: algo.AlgoId, Valid: true},
+							Count:       int32(algo.Lookback.Count),
+						})
+						if err != nil {
+							return fmt.Errorf("could not read algorithm results with lookback count %d: %w", algo.Lookback.Count, err)
+
+						}
+						for _, res := range results {
+
+						}
+
+					} else if algo.Lookback.Timedelta > 0 {
+
+					} else {
+						algoDepsResults = append(algoDepsResults, resultMap[algo.AlgoId].AlgorithmResult)
+					}
 				}
 			}
 

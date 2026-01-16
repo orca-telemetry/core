@@ -423,43 +423,39 @@ export interface ProcessorRegistration {
   projectName?: string | undefined;
 }
 
-/**
- * ProcessingTask represents a single algorithm execution request sent to a processor.
- * Tasks are streamed to processors as their dependencies are satisfied.
- */
-export interface ProcessingTask {
-  /**
-   * Unique ID for this specific task execution
-   * Used to correlate results and track execution state
-   */
-  taskId?:
-    | string
+/** The result of a dependency */
+export interface AlgorithmDependencyResultRow {
+  /** The result */
+  result?:
+    | Result
     | undefined;
-  /**
-   * Algorithm to execute
-   * Must be one of the algorithms the processor registered support for
-   */
+  /** The window that triggered the result */
+  window?: Window | undefined;
+}
+
+/** A sequence of results for an algorithm dependency */
+export interface AlgorithmDependencyResult {
+  /** The Algorithm */
   algorithm?:
     | Algorithm
     | undefined;
-  /**
-   * Window that triggered this task
-   * Provides the time context for the algorithm execution
-   */
-  window?:
-    | Window
+  /** The result */
+  result?: AlgorithmDependencyResultRow[] | undefined;
+}
+
+/** The algorithm execution packet */
+export interface ExecuteAlgorithm {
+  /** The algorithm to execute */
+  algorithm?:
+    | Algorithm
     | undefined;
-  /**
-   * Results from dependent algorithms
-   * Contains all results that this algorithm declared dependencies on
-   * All dependencies will be present when task is sent
-   */
-  dependencyResults?: Result[] | undefined;
+  /** The results of a dependent algorithm */
+  dependency?: AlgorithmDependencyResult[] | undefined;
 }
 
 /**
- * ExecutionRequest provides a complete view of a processing DAG's execution
- * status for a specific window. Used for monitoring and debugging.
+ * ExecutionRequest provides a statement of processing as requested
+ * by Orca core.
  */
 export interface ExecutionRequest {
   /** The exec_id */
@@ -470,12 +466,21 @@ export interface ExecutionRequest {
   window?:
     | Window
     | undefined;
-  /** Results from dependant algorithms */
+  /**
+   * Results from dependant algorithms
+   *
+   * @deprecated
+   */
   algorithmResults?:
     | AlgorithmResult[]
     | undefined;
-  /** The algorithms to execute */
+  /**
+   * The algorithms to execute
+   *
+   * @deprecated
+   */
   algorithms?: Algorithm[] | undefined;
+  algorithmExecutions?: ExecuteAlgorithm[] | undefined;
 }
 
 export interface ExecutionResult {
@@ -1708,33 +1713,25 @@ export const ProcessorRegistration: MessageFns<ProcessorRegistration> = {
   },
 };
 
-function createBaseProcessingTask(): ProcessingTask {
-  return { taskId: "", algorithm: undefined, window: undefined, dependencyResults: [] };
+function createBaseAlgorithmDependencyResultRow(): AlgorithmDependencyResultRow {
+  return { result: undefined, window: undefined };
 }
 
-export const ProcessingTask: MessageFns<ProcessingTask> = {
-  encode(message: ProcessingTask, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
-    if (message.taskId !== undefined && message.taskId !== "") {
-      writer.uint32(10).string(message.taskId);
-    }
-    if (message.algorithm !== undefined) {
-      Algorithm.encode(message.algorithm, writer.uint32(18).fork()).join();
+export const AlgorithmDependencyResultRow: MessageFns<AlgorithmDependencyResultRow> = {
+  encode(message: AlgorithmDependencyResultRow, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.result !== undefined) {
+      Result.encode(message.result, writer.uint32(10).fork()).join();
     }
     if (message.window !== undefined) {
-      Window.encode(message.window, writer.uint32(26).fork()).join();
-    }
-    if (message.dependencyResults !== undefined && message.dependencyResults.length !== 0) {
-      for (const v of message.dependencyResults) {
-        Result.encode(v!, writer.uint32(34).fork()).join();
-      }
+      Window.encode(message.window, writer.uint32(18).fork()).join();
     }
     return writer;
   },
 
-  decode(input: BinaryReader | Uint8Array, length?: number): ProcessingTask {
+  decode(input: BinaryReader | Uint8Array, length?: number): AlgorithmDependencyResultRow {
     const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
     const end = length === undefined ? reader.len : reader.pos + length;
-    const message = createBaseProcessingTask();
+    const message = createBaseAlgorithmDependencyResultRow();
     while (reader.pos < end) {
       const tag = reader.uint32();
       switch (tag >>> 3) {
@@ -1743,7 +1740,7 @@ export const ProcessingTask: MessageFns<ProcessingTask> = {
             break;
           }
 
-          message.taskId = reader.string();
+          message.result = Result.decode(reader, reader.uint32());
           continue;
         }
         case 2: {
@@ -1751,25 +1748,91 @@ export const ProcessingTask: MessageFns<ProcessingTask> = {
             break;
           }
 
-          message.algorithm = Algorithm.decode(reader, reader.uint32());
-          continue;
-        }
-        case 3: {
-          if (tag !== 26) {
-            break;
-          }
-
           message.window = Window.decode(reader, reader.uint32());
           continue;
         }
-        case 4: {
-          if (tag !== 34) {
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): AlgorithmDependencyResultRow {
+    return {
+      result: isSet(object.result) ? Result.fromJSON(object.result) : undefined,
+      window: isSet(object.window) ? Window.fromJSON(object.window) : undefined,
+    };
+  },
+
+  toJSON(message: AlgorithmDependencyResultRow): unknown {
+    const obj: any = {};
+    if (message.result !== undefined) {
+      obj.result = Result.toJSON(message.result);
+    }
+    if (message.window !== undefined) {
+      obj.window = Window.toJSON(message.window);
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<AlgorithmDependencyResultRow>, I>>(base?: I): AlgorithmDependencyResultRow {
+    return AlgorithmDependencyResultRow.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<AlgorithmDependencyResultRow>, I>>(object: I): AlgorithmDependencyResultRow {
+    const message = createBaseAlgorithmDependencyResultRow();
+    message.result = (object.result !== undefined && object.result !== null)
+      ? Result.fromPartial(object.result)
+      : undefined;
+    message.window = (object.window !== undefined && object.window !== null)
+      ? Window.fromPartial(object.window)
+      : undefined;
+    return message;
+  },
+};
+
+function createBaseAlgorithmDependencyResult(): AlgorithmDependencyResult {
+  return { algorithm: undefined, result: [] };
+}
+
+export const AlgorithmDependencyResult: MessageFns<AlgorithmDependencyResult> = {
+  encode(message: AlgorithmDependencyResult, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.algorithm !== undefined) {
+      Algorithm.encode(message.algorithm, writer.uint32(10).fork()).join();
+    }
+    if (message.result !== undefined && message.result.length !== 0) {
+      for (const v of message.result) {
+        AlgorithmDependencyResultRow.encode(v!, writer.uint32(18).fork()).join();
+      }
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): AlgorithmDependencyResult {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseAlgorithmDependencyResult();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
             break;
           }
 
-          const el = Result.decode(reader, reader.uint32());
+          message.algorithm = Algorithm.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          const el = AlgorithmDependencyResultRow.decode(reader, reader.uint32());
           if (el !== undefined) {
-            message.dependencyResults!.push(el);
+            message.result!.push(el);
           }
           continue;
         }
@@ -1782,53 +1845,126 @@ export const ProcessingTask: MessageFns<ProcessingTask> = {
     return message;
   },
 
-  fromJSON(object: any): ProcessingTask {
+  fromJSON(object: any): AlgorithmDependencyResult {
     return {
-      taskId: isSet(object.taskId) ? globalThis.String(object.taskId) : "",
       algorithm: isSet(object.algorithm) ? Algorithm.fromJSON(object.algorithm) : undefined,
-      window: isSet(object.window) ? Window.fromJSON(object.window) : undefined,
-      dependencyResults: globalThis.Array.isArray(object?.dependencyResults)
-        ? object.dependencyResults.map((e: any) => Result.fromJSON(e))
+      result: globalThis.Array.isArray(object?.result)
+        ? object.result.map((e: any) => AlgorithmDependencyResultRow.fromJSON(e))
         : [],
     };
   },
 
-  toJSON(message: ProcessingTask): unknown {
+  toJSON(message: AlgorithmDependencyResult): unknown {
     const obj: any = {};
-    if (message.taskId !== undefined && message.taskId !== "") {
-      obj.taskId = message.taskId;
-    }
     if (message.algorithm !== undefined) {
       obj.algorithm = Algorithm.toJSON(message.algorithm);
     }
-    if (message.window !== undefined) {
-      obj.window = Window.toJSON(message.window);
-    }
-    if (message.dependencyResults?.length) {
-      obj.dependencyResults = message.dependencyResults.map((e) => Result.toJSON(e));
+    if (message.result?.length) {
+      obj.result = message.result.map((e) => AlgorithmDependencyResultRow.toJSON(e));
     }
     return obj;
   },
 
-  create<I extends Exact<DeepPartial<ProcessingTask>, I>>(base?: I): ProcessingTask {
-    return ProcessingTask.fromPartial(base ?? ({} as any));
+  create<I extends Exact<DeepPartial<AlgorithmDependencyResult>, I>>(base?: I): AlgorithmDependencyResult {
+    return AlgorithmDependencyResult.fromPartial(base ?? ({} as any));
   },
-  fromPartial<I extends Exact<DeepPartial<ProcessingTask>, I>>(object: I): ProcessingTask {
-    const message = createBaseProcessingTask();
-    message.taskId = object.taskId ?? "";
+  fromPartial<I extends Exact<DeepPartial<AlgorithmDependencyResult>, I>>(object: I): AlgorithmDependencyResult {
+    const message = createBaseAlgorithmDependencyResult();
     message.algorithm = (object.algorithm !== undefined && object.algorithm !== null)
       ? Algorithm.fromPartial(object.algorithm)
       : undefined;
-    message.window = (object.window !== undefined && object.window !== null)
-      ? Window.fromPartial(object.window)
+    message.result = object.result?.map((e) => AlgorithmDependencyResultRow.fromPartial(e)) || [];
+    return message;
+  },
+};
+
+function createBaseExecuteAlgorithm(): ExecuteAlgorithm {
+  return { algorithm: undefined, dependency: [] };
+}
+
+export const ExecuteAlgorithm: MessageFns<ExecuteAlgorithm> = {
+  encode(message: ExecuteAlgorithm, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.algorithm !== undefined) {
+      Algorithm.encode(message.algorithm, writer.uint32(10).fork()).join();
+    }
+    if (message.dependency !== undefined && message.dependency.length !== 0) {
+      for (const v of message.dependency) {
+        AlgorithmDependencyResult.encode(v!, writer.uint32(18).fork()).join();
+      }
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): ExecuteAlgorithm {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseExecuteAlgorithm();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.algorithm = Algorithm.decode(reader, reader.uint32());
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          const el = AlgorithmDependencyResult.decode(reader, reader.uint32());
+          if (el !== undefined) {
+            message.dependency!.push(el);
+          }
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): ExecuteAlgorithm {
+    return {
+      algorithm: isSet(object.algorithm) ? Algorithm.fromJSON(object.algorithm) : undefined,
+      dependency: globalThis.Array.isArray(object?.dependency)
+        ? object.dependency.map((e: any) => AlgorithmDependencyResult.fromJSON(e))
+        : [],
+    };
+  },
+
+  toJSON(message: ExecuteAlgorithm): unknown {
+    const obj: any = {};
+    if (message.algorithm !== undefined) {
+      obj.algorithm = Algorithm.toJSON(message.algorithm);
+    }
+    if (message.dependency?.length) {
+      obj.dependency = message.dependency.map((e) => AlgorithmDependencyResult.toJSON(e));
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<ExecuteAlgorithm>, I>>(base?: I): ExecuteAlgorithm {
+    return ExecuteAlgorithm.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<ExecuteAlgorithm>, I>>(object: I): ExecuteAlgorithm {
+    const message = createBaseExecuteAlgorithm();
+    message.algorithm = (object.algorithm !== undefined && object.algorithm !== null)
+      ? Algorithm.fromPartial(object.algorithm)
       : undefined;
-    message.dependencyResults = object.dependencyResults?.map((e) => Result.fromPartial(e)) || [];
+    message.dependency = object.dependency?.map((e) => AlgorithmDependencyResult.fromPartial(e)) || [];
     return message;
   },
 };
 
 function createBaseExecutionRequest(): ExecutionRequest {
-  return { execId: "", window: undefined, algorithmResults: [], algorithms: [] };
+  return { execId: "", window: undefined, algorithmResults: [], algorithms: [], algorithmExecutions: [] };
 }
 
 export const ExecutionRequest: MessageFns<ExecutionRequest> = {
@@ -1847,6 +1983,11 @@ export const ExecutionRequest: MessageFns<ExecutionRequest> = {
     if (message.algorithms !== undefined && message.algorithms.length !== 0) {
       for (const v of message.algorithms) {
         Algorithm.encode(v!, writer.uint32(34).fork()).join();
+      }
+    }
+    if (message.algorithmExecutions !== undefined && message.algorithmExecutions.length !== 0) {
+      for (const v of message.algorithmExecutions) {
+        ExecuteAlgorithm.encode(v!, writer.uint32(42).fork()).join();
       }
     }
     return writer;
@@ -1897,6 +2038,17 @@ export const ExecutionRequest: MessageFns<ExecutionRequest> = {
           }
           continue;
         }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          const el = ExecuteAlgorithm.decode(reader, reader.uint32());
+          if (el !== undefined) {
+            message.algorithmExecutions!.push(el);
+          }
+          continue;
+        }
       }
       if ((tag & 7) === 4 || tag === 0) {
         break;
@@ -1916,6 +2068,9 @@ export const ExecutionRequest: MessageFns<ExecutionRequest> = {
       algorithms: globalThis.Array.isArray(object?.algorithms)
         ? object.algorithms.map((e: any) => Algorithm.fromJSON(e))
         : [],
+      algorithmExecutions: globalThis.Array.isArray(object?.algorithmExecutions)
+        ? object.algorithmExecutions.map((e: any) => ExecuteAlgorithm.fromJSON(e))
+        : [],
     };
   },
 
@@ -1933,6 +2088,9 @@ export const ExecutionRequest: MessageFns<ExecutionRequest> = {
     if (message.algorithms?.length) {
       obj.algorithms = message.algorithms.map((e) => Algorithm.toJSON(e));
     }
+    if (message.algorithmExecutions?.length) {
+      obj.algorithmExecutions = message.algorithmExecutions.map((e) => ExecuteAlgorithm.toJSON(e));
+    }
     return obj;
   },
 
@@ -1947,6 +2105,7 @@ export const ExecutionRequest: MessageFns<ExecutionRequest> = {
       : undefined;
     message.algorithmResults = object.algorithmResults?.map((e) => AlgorithmResult.fromPartial(e)) || [];
     message.algorithms = object.algorithms?.map((e) => Algorithm.fromPartial(e)) || [];
+    message.algorithmExecutions = object.algorithmExecutions?.map((e) => ExecuteAlgorithm.fromPartial(e)) || [];
     return message;
   },
 };
