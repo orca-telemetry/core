@@ -167,7 +167,7 @@ message AlgorithmDependency {
     // Number of past results to depend on (if at all)
     uint32 lookback_num = 5;
 
-    // Timeframe of past results to depend on (in milliseconds)
+    // Timeframe of past results to depend on (in nanoseconds)
     uint64 lookback_time_delta = 6;
   }
 }
@@ -310,7 +310,7 @@ message ExecuteAlgorithm {
   Algorithm algorithm = 1 [(buf.validate.field).required = true];
 
   // The results of a dependent algorithm
-  repeated AlgorithmDependencyResult dependency = 2;
+  repeated AlgorithmDependencyResult dependencies = 2;
 }
 
 // ExecutionRequest provides a statement of processing as requested

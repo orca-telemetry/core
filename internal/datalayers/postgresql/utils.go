@@ -3,6 +3,7 @@ package postgresql
 import (
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -142,14 +143,13 @@ func processTasks(
 			// build list of affected Algorithms
 			var affectedAlgorithms []*pb.Algorithm
 
-			// and their dependency's result
-			algoDepsResults := []*pb.AlgorithmResult{}
-
 			// generate an execution id
 			execUuid := uuid.New()
 			execId := strings.ReplaceAll(execUuid.String(), "-", "")
 
-			for _, node := range task.Nodes {
+			algorithmExecutions := make([]*pb.ExecuteAlgorithm, len(task.Nodes))
+
+			for ii, node := range task.Nodes {
 				algo, ok := algorithmMap[node.AlgoId()]
 
 				if !ok {
@@ -162,38 +162,127 @@ func processTasks(
 					Version: algo.Version,
 				})
 
+				algorithm_dependencies := make([]*pb.AlgorithmDependencyResult, node.LenAlgoDeps())
+
 				// determine which results need to be included
-				for algo := range node.AlgoDeps() {
-					// FIXME: include the logic to look back here
-					// if the algorithm has a lookback specified, then get
-					// that many results on top of the result in the current
-					// execution path
-					if algo.Lookback.Count > 0 {
-						results, err := d.queries.ReadResultsForAlgorithmByCount(ctx, ReadResultsForAlgorithmByCountParams{
-							AlgorithmID: pgtype.Int8{Int64: algo.AlgoId, Valid: true},
-							Count:       int32(algo.Lookback.Count),
-						})
-						if err != nil {
-							return fmt.Errorf("could not read algorithm results with lookback count %d: %w", algo.Lookback.Count, err)
+				jj := 0
+				for algoDep := range node.AlgoDeps() {
+					// get details of the algorithm - dependencies will only
+					// exist in this block if they have run
+					algorithm_result := resultMap[algoDep.AlgoId].GetAlgorithmResult()
 
-						}
-						for _, res := range results {
-
-						}
-
-					} else if algo.Lookback.Timedelta > 0 {
-
-					} else {
-						algoDepsResults = append(algoDepsResults, resultMap[algo.AlgoId].AlgorithmResult)
+					// log the result as the first entry before considering lookbacks
+					dep_results := []*pb.AlgorithmDependencyResultRow{
+						{
+							Result: algorithm_result.GetResult(),
+							Window: algorithm_result.GetWindow(),
+						},
 					}
+
+					// handle algorithm lookbacks
+					if algoDep.Lookback.Count > 0 {
+						results, err := d.queries.ReadResultsForAlgorithmByCount(ctx, ReadResultsForAlgorithmByCountParams{
+							AlgorithmID: pgtype.Int8{Int64: algoDep.AlgoId, Valid: true},
+							Count:       int32(algoDep.Lookback.Count),
+							SearchTo: pgtype.Timestamp{
+								Time:  algorithm_result.GetWindow().GetTimeTo().AsTime().UTC(),
+								Valid: true,
+							},
+						})
+
+						if err != nil {
+							return fmt.Errorf("could not read algorithm results with lookback count %d: %w", algoDep.Lookback.Count, err)
+
+						}
+
+						for _, res := range results {
+							if algorithm_result.GetAlgorithm().GetResultType() == pb.ResultType_ARRAY {
+								dep_results = append(dep_results, &pb.AlgorithmDependencyResultRow{
+									Result: &pb.Result{ResultData: &pb.Result_FloatValues{
+										FloatValues: &pb.FloatArray{Values: convertFloat64ToFloat32(res.ResultArray)},
+									}},
+								})
+							} else if algorithm_result.GetAlgorithm().GetResultType() == pb.ResultType_STRUCT {
+								var data map[string]any
+								err := json.Unmarshal(res.ResultJson, &data)
+								if err != nil {
+									return err
+								}
+
+								result_Struct, err := structpb.NewStruct(data)
+								if err != nil {
+									return err
+								}
+
+								dep_results = append(dep_results, &pb.AlgorithmDependencyResultRow{
+									Result: &pb.Result{ResultData: &pb.Result_StructValue{
+										StructValue: result_Struct,
+									}},
+								})
+							} else if algorithm_result.GetAlgorithm().GetResultType() == pb.ResultType_VALUE {
+								dep_results = append(dep_results, &pb.AlgorithmDependencyResultRow{
+									Result: &pb.Result{ResultData: &pb.Result_SingleValue{
+										SingleValue: algorithm_result.GetResult().GetSingleValue(),
+									}},
+								})
+							}
+						}
+						algorithm_dependencies[jj] = &pb.AlgorithmDependencyResult{
+							Algorithm: algorithm_result.GetAlgorithm(),
+							Result:    dep_results,
+						}
+
+					} else if algoDep.Lookback.Timedelta > 0 {
+						earliest_time_of_latest_result := algorithm_result.GetWindow().GetTimeFrom().AsTime().UTC()
+						search_from := earliest_time_of_latest_result.Add(-time.Duration(algoDep.Lookback.Timedelta))
+
+						results, err := d.queries.ReadResultsForAlgorithmByTimedelta(ctx, ReadResultsForAlgorithmByTimedeltaParams{
+							AlgorithmID: pgtype.Int8{Int64: algoDep.AlgoId, Valid: true},
+							SearchFrom: pgtype.Timestamp{
+								Time:  search_from,
+								Valid: true,
+							},
+							SearchTo: pgtype.Timestamp{
+								Time:  algorithm_result.GetWindow().GetTimeFrom().AsTime().UTC(),
+								Valid: true,
+							},
+						})
+
+						if err != nil {
+							return fmt.Errorf("could not read algorithm results with lookback count %d: %w", algoDep.Lookback.Count, err)
+
+						}
+
+						for _, res := range results {
+							if algorithm_result.GetAlgorithm().GetResultType() == pb.ResultType_ARRAY {
+								dep_results = append(dep_results, &pb.AlgorithmDependencyResultRow{
+									Result: &pb.Result{ResultData: &pb.Result_FloatValues{
+										FloatValues: &pb.FloatArray{Values: convertFloat64ToFloat32(res.ResultArray)},
+									}},
+								})
+							}
+						}
+						algorithm_dependencies[jj] = &pb.AlgorithmDependencyResult{
+							Algorithm: algorithm_result.GetAlgorithm(),
+							Result:    dep_results,
+						}
+						// TODO:
+					}
+					jj++
+				}
+				algorithmExecutions[ii] = &pb.ExecuteAlgorithm{
+					Algorithm: &pb.Algorithm{
+						Name:    algo.Name,
+						Version: algo.Version,
+					},
+					Dependencies: algorithm_dependencies,
 				}
 			}
 
 			execReq := &pb.ExecutionRequest{
-				ExecId:           execId,
-				Window:           window,
-				AlgorithmResults: algoDepsResults,
-				Algorithms:       affectedAlgorithms,
+				ExecId:              execId,
+				Window:              window,
+				AlgorithmExecutions: algorithmExecutions,
 			}
 
 			stream, err := client.ExecuteDagPart(ctx, execReq)
@@ -296,6 +385,14 @@ func convertFloat32ToFloat64(float32Slice []float32) []float64 {
 		float64Slice[i] = float64(value)
 	}
 	return float64Slice
+}
+
+func convertFloat64ToFloat32(float64Slice []float64) []float32 {
+	float32Slice := make([]float32, len(float64Slice))
+	for i, value := range float64Slice {
+		float32Slice[i] = float32(value)
+	}
+	return float32Slice
 }
 
 func convertStructToJsonBytes(s *structpb.Struct) ([]byte, error) {

@@ -306,7 +306,7 @@ export interface AlgorithmDependency {
     /** Number of past results to depend on (if at all) */
     { $case: "lookbackNum"; value: number }
     | //
-    /** Timeframe of past results to depend on (in milliseconds) */
+    /** Timeframe of past results to depend on (in nanoseconds) */
     { $case: "lookbackTimeDelta"; value: string }
     | undefined;
 }
@@ -450,7 +450,7 @@ export interface ExecuteAlgorithm {
     | Algorithm
     | undefined;
   /** The results of a dependent algorithm */
-  dependency?: AlgorithmDependencyResult[] | undefined;
+  dependencies?: AlgorithmDependencyResult[] | undefined;
 }
 
 /**
@@ -1879,7 +1879,7 @@ export const AlgorithmDependencyResult: MessageFns<AlgorithmDependencyResult> = 
 };
 
 function createBaseExecuteAlgorithm(): ExecuteAlgorithm {
-  return { algorithm: undefined, dependency: [] };
+  return { algorithm: undefined, dependencies: [] };
 }
 
 export const ExecuteAlgorithm: MessageFns<ExecuteAlgorithm> = {
@@ -1887,8 +1887,8 @@ export const ExecuteAlgorithm: MessageFns<ExecuteAlgorithm> = {
     if (message.algorithm !== undefined) {
       Algorithm.encode(message.algorithm, writer.uint32(10).fork()).join();
     }
-    if (message.dependency !== undefined && message.dependency.length !== 0) {
-      for (const v of message.dependency) {
+    if (message.dependencies !== undefined && message.dependencies.length !== 0) {
+      for (const v of message.dependencies) {
         AlgorithmDependencyResult.encode(v!, writer.uint32(18).fork()).join();
       }
     }
@@ -1917,7 +1917,7 @@ export const ExecuteAlgorithm: MessageFns<ExecuteAlgorithm> = {
 
           const el = AlgorithmDependencyResult.decode(reader, reader.uint32());
           if (el !== undefined) {
-            message.dependency!.push(el);
+            message.dependencies!.push(el);
           }
           continue;
         }
@@ -1933,8 +1933,8 @@ export const ExecuteAlgorithm: MessageFns<ExecuteAlgorithm> = {
   fromJSON(object: any): ExecuteAlgorithm {
     return {
       algorithm: isSet(object.algorithm) ? Algorithm.fromJSON(object.algorithm) : undefined,
-      dependency: globalThis.Array.isArray(object?.dependency)
-        ? object.dependency.map((e: any) => AlgorithmDependencyResult.fromJSON(e))
+      dependencies: globalThis.Array.isArray(object?.dependencies)
+        ? object.dependencies.map((e: any) => AlgorithmDependencyResult.fromJSON(e))
         : [],
     };
   },
@@ -1944,8 +1944,8 @@ export const ExecuteAlgorithm: MessageFns<ExecuteAlgorithm> = {
     if (message.algorithm !== undefined) {
       obj.algorithm = Algorithm.toJSON(message.algorithm);
     }
-    if (message.dependency?.length) {
-      obj.dependency = message.dependency.map((e) => AlgorithmDependencyResult.toJSON(e));
+    if (message.dependencies?.length) {
+      obj.dependencies = message.dependencies.map((e) => AlgorithmDependencyResult.toJSON(e));
     }
     return obj;
   },
@@ -1958,7 +1958,7 @@ export const ExecuteAlgorithm: MessageFns<ExecuteAlgorithm> = {
     message.algorithm = (object.algorithm !== undefined && object.algorithm !== null)
       ? Algorithm.fromPartial(object.algorithm)
       : undefined;
-    message.dependency = object.dependency?.map((e) => AlgorithmDependencyResult.fromPartial(e)) || [];
+    message.dependencies = object.dependencies?.map((e) => AlgorithmDependencyResult.fromPartial(e)) || [];
     return message;
   },
 };

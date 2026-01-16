@@ -170,12 +170,12 @@ class AlgorithmDependencyResult(_message.Message):
     def __init__(self, algorithm: _Optional[_Union[Algorithm, _Mapping]] = ..., result: _Optional[_Iterable[_Union[AlgorithmDependencyResultRow, _Mapping]]] = ...) -> None: ...
 
 class ExecuteAlgorithm(_message.Message):
-    __slots__ = ("algorithm", "dependency")
+    __slots__ = ("algorithm", "dependencies")
     ALGORITHM_FIELD_NUMBER: _ClassVar[int]
-    DEPENDENCY_FIELD_NUMBER: _ClassVar[int]
+    DEPENDENCIES_FIELD_NUMBER: _ClassVar[int]
     algorithm: Algorithm
-    dependency: _containers.RepeatedCompositeFieldContainer[AlgorithmDependencyResult]
-    def __init__(self, algorithm: _Optional[_Union[Algorithm, _Mapping]] = ..., dependency: _Optional[_Iterable[_Union[AlgorithmDependencyResult, _Mapping]]] = ...) -> None: ...
+    dependencies: _containers.RepeatedCompositeFieldContainer[AlgorithmDependencyResult]
+    def __init__(self, algorithm: _Optional[_Union[Algorithm, _Mapping]] = ..., dependencies: _Optional[_Iterable[_Union[AlgorithmDependencyResult, _Mapping]]] = ...) -> None: ...
 
 class ExecutionRequest(_message.Message):
     __slots__ = ("exec_id", "window", "algorithm_results", "algorithms", "algorithm_executions")

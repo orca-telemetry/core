@@ -725,11 +725,13 @@ JOIN windows w on
 	w.id = r.windows_id
 WHERE
 	r.algorithm_id = $1
-ORDER by time_from,time_to desc LIMIT $2
+    AND w.time_to < $2
+ORDER by time_from,time_to desc LIMIT $3
 `
 
 type ReadResultsForAlgorithmByCountParams struct {
 	AlgorithmID pgtype.Int8
+	SearchTo    pgtype.Timestamp
 	Count       int32
 }
 
@@ -751,7 +753,7 @@ type ReadResultsForAlgorithmByCountRow struct {
 }
 
 func (q *Queries) ReadResultsForAlgorithmByCount(ctx context.Context, arg ReadResultsForAlgorithmByCountParams) ([]ReadResultsForAlgorithmByCountRow, error) {
-	rows, err := q.db.Query(ctx, readResultsForAlgorithmByCount, arg.AlgorithmID, arg.Count)
+	rows, err := q.db.Query(ctx, readResultsForAlgorithmByCount, arg.AlgorithmID, arg.SearchTo, arg.Count)
 	if err != nil {
 		return nil, err
 	}
@@ -794,7 +796,8 @@ JOIN windows w ON
 	w.id = r.windows_id
 WHERE
 	r.algorithm_id = $1
-AND w.time_from > $2 and w.time_to  < $3
+    AND w.time_from > $2
+    AND w.time_to  < $3
 order by time_from, time_to desc
 `
 

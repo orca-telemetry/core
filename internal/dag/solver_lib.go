@@ -59,7 +59,6 @@ func (n Node) ID() int64 {
 func (n Node) AlgoId() int64 {
 	return n.algoId
 }
-
 func (n Node) AlgoDeps() iter.Seq[AlgoDep] {
 	return func(yield func(AlgoDep) bool) {
 		for _, dep := range n.algoDeps {
@@ -68,6 +67,9 @@ func (n Node) AlgoDeps() iter.Seq[AlgoDep] {
 			}
 		}
 	}
+}
+func (n Node) LenAlgoDeps() int {
+	return len(n.algoDeps)
 }
 
 // ProcessorTask represents a set of tasks (nodes) assigned to a single processor
