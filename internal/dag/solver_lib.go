@@ -18,27 +18,27 @@ const CountLookback lookback = "CountLookback"
 const TimedeltaLookback lookback = "TimedeltaLookback"
 
 type Lookback struct {
-	count     int
-	timedelta int
+	Count     int
+	Timedelta int
 }
 
 type AlgoDep struct {
-	algoId   int64
-	lookback Lookback
+	AlgoId   int64
+	Lookback Lookback
 }
 
 func (d AlgoDep) NeedsLookback() bool {
-	return d.lookback.count > 0 || d.lookback.timedelta > 0
+	return d.Lookback.Count > 0 || d.Lookback.Timedelta > 0
 }
 
 func (d AlgoDep) LookbackType() (error, lookback) {
-	if d.lookback.count > 0 {
+	if d.Lookback.Count > 0 {
 		return nil, CountLookback
 	}
-	if d.lookback.timedelta > 0 {
+	if d.Lookback.Timedelta > 0 {
 		return nil, TimedeltaLookback
 	}
-	return fmt.Errorf("algodep with id %d does not require lookback", d.algoId), ""
+	return fmt.Errorf("algodep with id %d does not require lookback", d.AlgoId), ""
 }
 
 // Node represents an algorithm in the DAG
@@ -60,10 +60,10 @@ func (n Node) AlgoId() int64 {
 	return n.algoId
 }
 
-func (n Node) AlgoDepIds() iter.Seq[int64] {
-	return func(yield func(int64) bool) {
+func (n Node) AlgoDeps() iter.Seq[AlgoDep] {
+	return func(yield func(AlgoDep) bool) {
 		for _, dep := range n.algoDeps {
-			if !yield(dep.algoId) {
+			if !yield(dep) {
 				return
 			}
 		}
@@ -236,8 +236,8 @@ func BuildPlan(
 					return Plan{}, fmt.Errorf("duplicate lookback paramaters found beteween algoId: %d and algoId: %d", prevNode.algoId, node.algoId)
 				}
 				lookbackMap[_edgeStr] = Lookback{
-					count:     lookbackCount,
-					timedelta: lookbackTd,
+					Count:     lookbackCount,
+					Timedelta: lookbackTd,
 				}
 				edge := g.NewEdge(prevNode, node)
 				g.SetEdge(edge)
@@ -276,18 +276,18 @@ func BuildPlan(
 					return Plan{}, fmt.Errorf("could not find edge lookback settings between algoId: %d and algoId: %d", node.algoId, _currNode_v2.algoId)
 				}
 				if node.algoDeps == nil {
-					node.algoDeps = []AlgoDep{{algoId: _currNode_v2.algoId, lookback: lookbackConfig}}
+					node.algoDeps = []AlgoDep{{AlgoId: _currNode_v2.algoId, Lookback: lookbackConfig}}
 				} else {
 					node.algoDeps = append(node.algoDeps, AlgoDep{
-						algoId: _currNode_v2.algoId, lookback: lookbackConfig})
+						AlgoId: _currNode_v2.algoId, Lookback: lookbackConfig})
 				}
 			}
 			// sort the algo deps within the node
 			slices.SortFunc(node.algoDeps, func(a, b AlgoDep) int {
-				if a.algoId < b.algoId {
+				if a.AlgoId < b.AlgoId {
 					return -1
 				}
-				if a.algoId > b.algoId {
+				if a.AlgoId > b.AlgoId {
 					return 1
 				}
 				return 0

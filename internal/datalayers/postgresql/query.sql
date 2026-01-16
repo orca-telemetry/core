@@ -238,3 +238,27 @@ SELECT * FROM metadata_fields;
 
 -- name: ReadWindowTypeMetadataFields :many
 SELECT * FROM window_type_metadata_fields;
+
+-- name: ReadResultsForAlgorithmByTimedelta :many
+SELECT
+	*
+FROM
+	results r
+JOIN windows w ON
+	w.id = r.windows_id
+WHERE
+	r.algorithm_id = sqlc.arg('algorithm_id')
+AND w.time_from > sqlc.arg('search_from') and w.time_to  < sqlc.arg('search_to')
+order by time_from, time_to desc;
+
+-- name: ReadResultsForAlgorithmByCount :many
+SELECT
+	*
+FROM
+	results r
+JOIN windows w on
+	w.id = r.windows_id
+WHERE
+	r.algorithm_id = sqlc.arg('algorithm_id')
+ORDER by time_from,time_to desc LIMIT sqlc.arg('count');
+

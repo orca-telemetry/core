@@ -286,48 +286,52 @@ message ProcessorRegistration {
   string project_name = 5;
 }
 
-// ProcessingTask represents a single algorithm execution request sent to a processor.
-// Tasks are streamed to processors as their dependencies are satisfied.
-message ProcessingTask {
-  // Unique ID for this specific task execution
-  // Used to correlate results and track execution state
-  string task_id = 1 [(buf.validate.field).required = true];
+// The result of a dependency
+message AlgorithmDependencyResultRow {
+  // The result
+  Result result = 1 [(buf.validate.field).required = true];
 
-  // Algorithm to execute
-  // Must be one of the algorithms the processor registered support for
-  Algorithm algorithm = 2 [(buf.validate.field).required = true];
-
-  // Window that triggered this task
-  // Provides the time context for the algorithm execution
-  Window window = 3 [(buf.validate.field).required = true];
-
-  // Results from dependent algorithms
-  // Contains all results that this algorithm declared dependencies on
-  // All dependencies will be present when task is sent
-  repeated Result dependency_results = 4;
+  // The window that triggered the result
+  Window window = 2 [(buf.validate.field).required = true];
 }
 
-// ExecutionRequest provides a complete view of a processing DAG's execution
-// status for a specific window. Used for monitoring and debugging.
+// A sequence of results for an algorithm dependency
+message AlgorithmDependencyResult {
+  // The Algorithm
+  Algorithm algorithm = 1 [(buf.validate.field).required = true];
+
+  // The result
+  repeated AlgorithmDependencyResultRow result = 2 [(buf.validate.field).required = true];
+}
+
+// The algorithm execution packet
+message ExecuteAlgorithm {
+  // The algorithm to execute
+  Algorithm algorithm = 1 [(buf.validate.field).required = true];
+
+  // The results of a dependent algorithm
+  repeated AlgorithmDependencyResult dependency = 2;
+}
+
+// ExecutionRequest provides a statement of processing as requested
+// by Orca core.
 message ExecutionRequest {
   // The exec_id
   string exec_id = 1 [(buf.validate.field).required = true];
 
   // The window that triggered the algorithm 
   Window window = 2 [(buf.validate.field).required = true];
-  
-  message _ExecutionPacket {
-    // Results from dependant algorithms
-    repeated AlgorithmResult algorithm_results = 3;
+ 
+  // FIXME: in v1.0.0 of Orca - remove these deprecated fields
 
-    // The algorithm to execute
-    Algorithm algorithms = 4;
-  }
   // Results from dependant algorithms
-  repeated AlgorithmResult algorithm_results = 3;
+  repeated AlgorithmResult algorithm_results = 3 [deprecated = true];
 
   // The algorithms to execute
-  repeated Algorithm algorithms = 4;
+  repeated Algorithm algorithms = 4 [deprecated = true];
+  // FIXME:
+
+  repeated ExecuteAlgorithm algorithm_executions = 5 [(buf.validate.field).required = true];
 }
 
 message ExecutionResult {

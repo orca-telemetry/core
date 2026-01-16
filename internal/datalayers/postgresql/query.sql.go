@@ -716,6 +716,146 @@ func (q *Queries) ReadProcessorsByIDs(ctx context.Context, processorIds []int64)
 	return items, nil
 }
 
+const readResultsForAlgorithmByCount = `-- name: ReadResultsForAlgorithmByCount :many
+SELECT
+	r.id, windows_id, r.window_type_id, algorithm_id, result_value, result_array, result_json, w.id, w.window_type_id, time_from, time_to, origin, metadata, created
+FROM
+	results r
+JOIN windows w on
+	w.id = r.windows_id
+WHERE
+	r.algorithm_id = $1
+ORDER by time_from,time_to desc LIMIT $2
+`
+
+type ReadResultsForAlgorithmByCountParams struct {
+	AlgorithmID pgtype.Int8
+	Count       int32
+}
+
+type ReadResultsForAlgorithmByCountRow struct {
+	ID             int64
+	WindowsID      pgtype.Int8
+	WindowTypeID   pgtype.Int8
+	AlgorithmID    pgtype.Int8
+	ResultValue    pgtype.Float8
+	ResultArray    []float64
+	ResultJson     []byte
+	ID_2           int64
+	WindowTypeID_2 int64
+	TimeFrom       pgtype.Timestamp
+	TimeTo         pgtype.Timestamp
+	Origin         string
+	Metadata       []byte
+	Created        pgtype.Timestamp
+}
+
+func (q *Queries) ReadResultsForAlgorithmByCount(ctx context.Context, arg ReadResultsForAlgorithmByCountParams) ([]ReadResultsForAlgorithmByCountRow, error) {
+	rows, err := q.db.Query(ctx, readResultsForAlgorithmByCount, arg.AlgorithmID, arg.Count)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ReadResultsForAlgorithmByCountRow
+	for rows.Next() {
+		var i ReadResultsForAlgorithmByCountRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.WindowsID,
+			&i.WindowTypeID,
+			&i.AlgorithmID,
+			&i.ResultValue,
+			&i.ResultArray,
+			&i.ResultJson,
+			&i.ID_2,
+			&i.WindowTypeID_2,
+			&i.TimeFrom,
+			&i.TimeTo,
+			&i.Origin,
+			&i.Metadata,
+			&i.Created,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const readResultsForAlgorithmByTimedelta = `-- name: ReadResultsForAlgorithmByTimedelta :many
+SELECT
+	r.id, windows_id, r.window_type_id, algorithm_id, result_value, result_array, result_json, w.id, w.window_type_id, time_from, time_to, origin, metadata, created
+FROM
+	results r
+JOIN windows w ON
+	w.id = r.windows_id
+WHERE
+	r.algorithm_id = $1
+AND w.time_from > $2 and w.time_to  < $3
+order by time_from, time_to desc
+`
+
+type ReadResultsForAlgorithmByTimedeltaParams struct {
+	AlgorithmID pgtype.Int8
+	SearchFrom  pgtype.Timestamp
+	SearchTo    pgtype.Timestamp
+}
+
+type ReadResultsForAlgorithmByTimedeltaRow struct {
+	ID             int64
+	WindowsID      pgtype.Int8
+	WindowTypeID   pgtype.Int8
+	AlgorithmID    pgtype.Int8
+	ResultValue    pgtype.Float8
+	ResultArray    []float64
+	ResultJson     []byte
+	ID_2           int64
+	WindowTypeID_2 int64
+	TimeFrom       pgtype.Timestamp
+	TimeTo         pgtype.Timestamp
+	Origin         string
+	Metadata       []byte
+	Created        pgtype.Timestamp
+}
+
+func (q *Queries) ReadResultsForAlgorithmByTimedelta(ctx context.Context, arg ReadResultsForAlgorithmByTimedeltaParams) ([]ReadResultsForAlgorithmByTimedeltaRow, error) {
+	rows, err := q.db.Query(ctx, readResultsForAlgorithmByTimedelta, arg.AlgorithmID, arg.SearchFrom, arg.SearchTo)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ReadResultsForAlgorithmByTimedeltaRow
+	for rows.Next() {
+		var i ReadResultsForAlgorithmByTimedeltaRow
+		if err := rows.Scan(
+			&i.ID,
+			&i.WindowsID,
+			&i.WindowTypeID,
+			&i.AlgorithmID,
+			&i.ResultValue,
+			&i.ResultArray,
+			&i.ResultJson,
+			&i.ID_2,
+			&i.WindowTypeID_2,
+			&i.TimeFrom,
+			&i.TimeTo,
+			&i.Origin,
+			&i.Metadata,
+			&i.Created,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const readWindowTypeMetadataFields = `-- name: ReadWindowTypeMetadataFields :many
 SELECT window_type_name, window_type_version, metadata_field_id, metadata_field_name, metadata_field_description FROM window_type_metadata_fields
 `

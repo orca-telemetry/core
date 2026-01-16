@@ -31,10 +31,10 @@ func TestBuildPlan(t *testing.T) {
 						{ProcId: 1, Nodes: []Node{{algoId: 1, procId: 1, algoDeps: nil}}},
 					}},
 					{Tasks: []ProcessorTask{
-						{ProcId: 1, Nodes: []Node{{algoId: 2, procId: 1, algoDeps: []AlgoDep{{algoId: 1}}}}},
+						{ProcId: 1, Nodes: []Node{{algoId: 2, procId: 1, algoDeps: []AlgoDep{{AlgoId: 1}}}}},
 					}},
 					{Tasks: []ProcessorTask{
-						{ProcId: 1, Nodes: []Node{{algoId: 3, procId: 1, algoDeps: []AlgoDep{{algoId: 2}}}}},
+						{ProcId: 1, Nodes: []Node{{algoId: 3, procId: 1, algoDeps: []AlgoDep{{AlgoId: 2}}}}},
 					}},
 				},
 				AffectedProcessors: []int64{1},
@@ -75,13 +75,13 @@ func TestBuildPlan(t *testing.T) {
 					}},
 					{Tasks: []ProcessorTask{
 						{ProcId: 2, Nodes: []Node{
-							{algoId: 2, procId: 2, algoDeps: []AlgoDep{{algoId: 1}}},
-							{algoId: 3, procId: 2, algoDeps: []AlgoDep{{algoId: 1}}},
+							{algoId: 2, procId: 2, algoDeps: []AlgoDep{{AlgoId: 1}}},
+							{algoId: 3, procId: 2, algoDeps: []AlgoDep{{AlgoId: 1}}},
 						}},
 					}},
 					{Tasks: []ProcessorTask{
 						{ProcId: 3, Nodes: []Node{
-							{algoId: 4, procId: 3, algoDeps: []AlgoDep{{algoId: 2}, {algoId: 3}}},
+							{algoId: 4, procId: 3, algoDeps: []AlgoDep{{AlgoId: 2}, {AlgoId: 3}}},
 						}},
 					}},
 				},
@@ -144,24 +144,24 @@ func TestBuildPlan(t *testing.T) {
 					}},
 					{Tasks: []ProcessorTask{
 						{ProcId: 2, Nodes: []Node{
-							{algoId: 2, procId: 2, algoDeps: []AlgoDep{{algoId: 1, lookback: Lookback{count: 0, timedelta: 0}}}},
-							{algoId: 4, procId: 2, algoDeps: []AlgoDep{{algoId: 3, lookback: Lookback{count: 0, timedelta: 0}}}},
+							{algoId: 2, procId: 2, algoDeps: []AlgoDep{{AlgoId: 1, Lookback: Lookback{Count: 0, Timedelta: 0}}}},
+							{algoId: 4, procId: 2, algoDeps: []AlgoDep{{AlgoId: 3, Lookback: Lookback{Count: 0, Timedelta: 0}}}},
 						}},
 						{ProcId: 5, Nodes: []Node{
-							{algoId: 7, procId: 5, algoDeps: []AlgoDep{{algoId: 6, lookback: Lookback{count: 0, timedelta: 0}}}},
+							{algoId: 7, procId: 5, algoDeps: []AlgoDep{{AlgoId: 6, Lookback: Lookback{Count: 0, Timedelta: 0}}}},
 						}},
 					}},
 					{Tasks: []ProcessorTask{
 						{ProcId: 3, Nodes: []Node{
-							{algoId: 5, procId: 3, algoDeps: []AlgoDep{{algoId: 2, lookback: Lookback{count: 0, timedelta: 0}}, {algoId: 4, lookback: Lookback{count: 0, timedelta: 0}}}},
+							{algoId: 5, procId: 3, algoDeps: []AlgoDep{{AlgoId: 2, Lookback: Lookback{Count: 0, Timedelta: 0}}, {AlgoId: 4, Lookback: Lookback{Count: 0, Timedelta: 0}}}},
 						}},
 						{ProcId: 5, Nodes: []Node{
-							{algoId: 8, procId: 5, algoDeps: []AlgoDep{{algoId: 7, lookback: Lookback{count: 0, timedelta: 0}}}},
+							{algoId: 8, procId: 5, algoDeps: []AlgoDep{{AlgoId: 7, Lookback: Lookback{Count: 0, Timedelta: 0}}}},
 						}},
 					}},
 					{Tasks: []ProcessorTask{
 						{ProcId: 6, Nodes: []Node{
-							{algoId: 9, procId: 6, algoDeps: []AlgoDep{{algoId: 8, lookback: Lookback{count: 0, timedelta: 0}}}},
+							{algoId: 9, procId: 6, algoDeps: []AlgoDep{{AlgoId: 8, Lookback: Lookback{Count: 0, Timedelta: 0}}}},
 						}},
 					}},
 				},
