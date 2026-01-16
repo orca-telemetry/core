@@ -161,6 +161,116 @@ func TestAddProcessor(t *testing.T) {
 	assert.Equal(t, emitStatus.GetStatus(), pb.WindowEmitStatus_PROCESSING_TRIGGERED)
 }
 
+// TestAddProcessor tests that several processors can be added
+func TestLookbackDependenciesBetweenAlgorithms(t *testing.T) {
+
+	// start the mock OrcaProcessor gRPC server
+	mockProcessor_1, mockListener_1, err := StartMockOrcaProcessor(0) // set port to 0 to get random available port
+	mockProcessor_2, mockListener_2, err := StartMockOrcaProcessor(0) // set port to 0 to get random available port
+	assert.NoError(t, err)
+
+	// FIXME: Should not have to do this. The `processTask` function should be wait grouped.
+	t.Cleanup(func() {
+		time.Sleep(100 * time.Millisecond) // some time for processing to complete
+		mockProcessor_1.GracefulStop()
+		mockListener_1.Close()
+		mockProcessor_2.GracefulStop()
+		mockListener_2.Close()
+	})
+
+	// get the actual address the mock server is listening on
+	processorConnStr_1 := mockListener_1.Addr().String()
+	processorConnStr_2 := mockListener_2.Addr().String()
+
+	// TODO: paramaterise if we have more datalayers (e.g. MySQL, SQLite) - high level function should be the same between them
+	dlyr, err := NewDatalayerClient(testCtx, "postgresql", testConnStr)
+	assert.NoError(t, err)
+
+	asset_id := pb.MetadataField{Name: "asset_id", Description: "Unique ID of the asset"}
+	fleet_id := pb.MetadataField{Name: "fleet_id", Description: "Unique ID of the fleet"}
+
+	windowType := pb.WindowType{
+		Name:    "TestWindow",
+		Version: "1.0.0",
+		MetadataFields: []*pb.MetadataField{
+			&asset_id,
+			&fleet_id,
+		},
+	}
+
+	algo_1 := pb.Algorithm{
+		Name:       "TestAlgorithm1",
+		Version:    "1.0.0",
+		WindowType: &windowType,
+		ResultType: pb.ResultType_VALUE,
+	}
+
+	algo_2 := pb.Algorithm{
+		Name:       "TestAlgorithm2",
+		Version:    "1.0.0",
+		WindowType: &windowType,
+		ResultType: pb.ResultType_VALUE,
+	}
+
+	proc_1 := pb.ProcessorRegistration{
+		Name:                "TestProcessor1",
+		Runtime:             "Test",
+		ProjectName:         "Test",
+		ConnectionStr:       processorConnStr_1,
+		SupportedAlgorithms: []*pb.Algorithm{&algo_1},
+	}
+
+	algo_2.Dependencies = []*pb.AlgorithmDependency{{
+		Name:             algo_1.Name,
+		Version:          algo_1.Version,
+		ProcessorName:    proc_1.Name,
+		ProcessorRuntime: proc_1.Runtime,
+		Lookback: &pb.AlgorithmDependency_LookbackNum{
+			LookbackNum: 5,
+		},
+	}}
+
+	proc_2 := pb.ProcessorRegistration{
+		Name:                "TestProcessor2",
+		Runtime:             "Test",
+		ConnectionStr:       processorConnStr_2,
+		ProjectName:         "Test",
+		SupportedAlgorithms: []*pb.Algorithm{&algo_2},
+	}
+
+	// 1. register a processor
+	err = dlyr.RegisterProcessor(testCtx, &proc_1)
+	assert.NoError(t, err)
+
+	// 1. register another processor
+	err = dlyr.RegisterProcessor(testCtx, &proc_2)
+	assert.NoError(t, err)
+
+	// 2. Emit enough windows to exhaust the lookback
+	for ii := range 10 {
+		window := pb.Window{TimeFrom: &timestamppb.Timestamp{
+			Seconds: int64(ii),
+			Nanos:   0,
+		}, TimeTo: &timestamppb.Timestamp{
+			Seconds: int64(ii + 1),
+			Nanos:   0,
+		},
+			WindowTypeName:    windowType.GetName(),
+			WindowTypeVersion: windowType.GetVersion(),
+			Origin:            "Test",
+			Metadata: &structpb.Struct{
+				Fields: map[string]*structpb.Value{
+					"asset_id": {Kind: &structpb.Value_NumberValue{NumberValue: 0}},
+					"fleet_id": {Kind: &structpb.Value_NumberValue{NumberValue: 0}},
+				},
+			},
+		}
+		emitStatus, err := dlyr.EmitWindow(testCtx, &window)
+		assert.NoError(t, err)
+		assert.Equal(t, emitStatus.GetStatus(), pb.WindowEmitStatus_PROCESSING_TRIGGERED)
+	}
+}
+
 // TestMetadataFieldsChangeable tests that metadata fields on a window type can be changed
 func TestMetadataFieldsChangeable(t *testing.T) {
 
@@ -545,6 +655,23 @@ func TestValidDependenciesBetweenProcessors(t *testing.T) {
 
 	err = dlyr.RegisterProcessor(testCtx, &proc_2)
 	assert.NoError(t, err)
+
+	// emit for good measure. tests some useful code pathways like the
+	// dag resolution
+	window := &pb.Window{TimeFrom: &timestamppb.Timestamp{
+		Seconds: 0,
+		Nanos:   0,
+	}, TimeTo: &timestamppb.Timestamp{
+		Seconds: 1,
+		Nanos:   0,
+	},
+		WindowTypeName:    windowType.GetName(),
+		WindowTypeVersion: windowType.GetVersion(),
+		Origin:            "Test",
+	}
+	emitStatus, err := dlyr.EmitWindow(testCtx, window)
+	assert.NoError(t, err)
+	assert.Equal(t, emitStatus.GetStatus(), pb.WindowEmitStatus_PROCESSING_TRIGGERED)
 }
 
 func TestAlgosSameNamesDifferentProcessors(t *testing.T) {

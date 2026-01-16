@@ -39,14 +39,8 @@ search_tree AS (
         st.algo_id_path || '.' || ad.to_algorithm_id::VARCHAR,
         st.proc_id_path || '.' || ad.to_processor_id::VARCHAR,
         st.window_type_id_path || '.' || ad.to_window_type_id::VARCHAR,
-        CASE 
-            WHEN st.lookback_count_path = '0' THEN COALESCE(ad.lookback_count::VARCHAR, '0')
-            ELSE st.lookback_count_path || '.' || COALESCE(ad.lookback_count::VARCHAR, '0')
-        END,
-        CASE 
-            WHEN st.lookback_timedelta_path = '0' THEN COALESCE(ad.lookback_timedelta::VARCHAR, '0')
-            ELSE st.lookback_timedelta_path || '.' || COALESCE(ad.lookback_timedelta::VARCHAR, '0')
-        END
+        st.lookback_count_path || '.' || ad.lookback_count::VARCHAR,
+        st.lookback_timedelta_path || '.' || ad.lookback_timedelta::VARCHAR
     FROM
         algorithm_dependency ad
     JOIN
@@ -59,8 +53,8 @@ final_view AS (
         text2ltree(st.algo_id_path) AS algo_id_path,
         text2ltree(st.window_type_id_path) AS window_type_id_path,
         text2ltree(st.proc_id_path) AS proc_id_path,
-        st.lookback_count_path,
-        st.lookback_timedelta_path
+        text2ltree(st.lookback_count_path) as lookback_count_path,
+        text2ltree(st.lookback_timedelta_path) as lookback_timedelta_path
     FROM search_tree st
     WHERE
         st.algo_id IN (SELECT to_algorithm_id FROM leaf_nodes)

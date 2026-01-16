@@ -75,8 +75,8 @@ type AlgorithmDependency struct {
 	FromProcessorID   int64
 	ToProcessorID     int64
 	Created           pgtype.Timestamp
-	LookbackCount     pgtype.Int8
-	LookbackTimedelta pgtype.Int8
+	LookbackCount     int64
+	LookbackTimedelta int64
 }
 
 type AlgorithmExecutionPath struct {
