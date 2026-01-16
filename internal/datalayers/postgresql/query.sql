@@ -248,7 +248,8 @@ JOIN windows w ON
 	w.id = r.windows_id
 WHERE
 	r.algorithm_id = sqlc.arg('algorithm_id')
-AND w.time_from > sqlc.arg('search_from') and w.time_to  < sqlc.arg('search_to')
+    AND w.time_from > sqlc.arg('search_from')
+    AND w.time_to  < sqlc.arg('search_to')
 order by time_from, time_to desc;
 
 -- name: ReadResultsForAlgorithmByCount :many
@@ -260,5 +261,5 @@ JOIN windows w on
 	w.id = r.windows_id
 WHERE
 	r.algorithm_id = sqlc.arg('algorithm_id')
+    AND w.time_to < sqlc.arg('search_to')
 ORDER by time_from,time_to desc LIMIT sqlc.arg('count');
-
