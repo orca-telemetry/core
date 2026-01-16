@@ -234,13 +234,13 @@ func BuildPlan(
 
 			if prevNode.id != 0 {
 				_edgeStr := fmt.Sprintf("%d.%d", prevNode.algoId, node.algoId)
-				if _, ok := lookbackMap[_edgeStr]; ok { // the edge should not be populated
-					return Plan{}, fmt.Errorf("duplicate lookback paramaters found beteween algoId: %d and algoId: %d", prevNode.algoId, node.algoId)
+				if _, ok := lookbackMap[_edgeStr]; !ok { // the edge can be populated
+					lookbackMap[_edgeStr] = Lookback{
+						Count:     lookbackCount,
+						Timedelta: lookbackTd,
+					}
 				}
-				lookbackMap[_edgeStr] = Lookback{
-					Count:     lookbackCount,
-					Timedelta: lookbackTd,
-				}
+
 				edge := g.NewEdge(prevNode, node)
 				g.SetEdge(edge)
 			}

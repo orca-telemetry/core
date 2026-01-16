@@ -169,6 +169,72 @@ func TestBuildPlan(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "complex DAG with lookback",
+			windowExecPath: []string{
+				"1.1.1",
+				"1.1.1",
+				"1.1.1.1",
+			},
+			algoExecPath: []string{
+				"1.2.5",   // Path 1: Processor 1 -> Processor 2 -> Processor 3
+				"3.4.5",   // Path 2: Processor 1 -> Processor 2 -> Processor 3
+				"6.7.8.9", // Path 3: Processor 4 -> Processor 5 -> Processor 5 -> Processor 6
+			},
+			procExecPath: []string{
+				"1.2.3",   // Node 1 (proc 1) -> Node 2 (proc 2) -> Node 5 (proc 3)
+				"1.2.3",   // Node 3 (proc 1) -> Node 4 (proc 2) -> Node 5 (proc 3)
+				"4.5.5.6", // Node 6 (proc 4) -> Node 7 (proc 5) -> Node 8 (proc 5) -> Node 9 (proc 6)
+			},
+			lookbackCounts: []string{
+				"0.10.0",
+				"0.0.103",
+				"0.130.10.0",
+			},
+			lookbackTimedeltas: []string{
+				"0.0.100",
+				"0.13.0",
+				"0.0.0.40",
+			},
+			targetWindowId: 1,
+			want: Plan{
+				Stages: []Stage{
+					{Tasks: []ProcessorTask{
+						{ProcId: 1, Nodes: []Node{
+							{algoId: 1, procId: 1, algoDeps: nil},
+							{algoId: 3, procId: 1, algoDeps: nil},
+						}},
+						{ProcId: 4, Nodes: []Node{
+							{algoId: 6, procId: 4, algoDeps: nil},
+						}},
+					}},
+					{Tasks: []ProcessorTask{
+						{ProcId: 2, Nodes: []Node{
+							{algoId: 2, procId: 2, algoDeps: []AlgoDep{{AlgoId: 1, Lookback: Lookback{Count: 10, Timedelta: 0}}}},
+							{algoId: 4, procId: 2, algoDeps: []AlgoDep{{AlgoId: 3, Lookback: Lookback{Count: 0, Timedelta: 13}}}},
+						}},
+						{ProcId: 5, Nodes: []Node{
+							{algoId: 7, procId: 5, algoDeps: []AlgoDep{{AlgoId: 6, Lookback: Lookback{Count: 130, Timedelta: 0}}}},
+						}},
+					}},
+					{Tasks: []ProcessorTask{
+						{ProcId: 3, Nodes: []Node{
+							{algoId: 5, procId: 3, algoDeps: []AlgoDep{{AlgoId: 2, Lookback: Lookback{Count: 0, Timedelta: 100}}, {AlgoId: 4, Lookback: Lookback{Count: 103, Timedelta: 0}}}},
+						}},
+						{ProcId: 5, Nodes: []Node{
+							{algoId: 8, procId: 5, algoDeps: []AlgoDep{{AlgoId: 7, Lookback: Lookback{Count: 10, Timedelta: 0}}}},
+						}},
+					}},
+					{Tasks: []ProcessorTask{
+						{ProcId: 6, Nodes: []Node{
+							{algoId: 9, procId: 6, algoDeps: []AlgoDep{{AlgoId: 8, Lookback: Lookback{Count: 0, Timedelta: 40}}}},
+						}},
+					}},
+				},
+				AffectedProcessors: []int64{1, 2, 3, 4, 5, 6},
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {

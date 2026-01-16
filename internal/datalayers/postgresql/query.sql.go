@@ -110,8 +110,8 @@ INSERT INTO algorithm_dependency (
 `
 
 type CreateAlgorithmDependencyParams struct {
-	LookbackCount        pgtype.Int8
-	LookbackTimedelta    pgtype.Int8
+	LookbackCount        int64
+	LookbackTimedelta    int64
 	FromAlgorithmName    string
 	FromAlgorithmVersion string
 	FromProcessorName    string
