@@ -27,13 +27,13 @@ func (s *mockOrcaProcessorServer) ExecuteDagPart(req *pb.ExecutionRequest, strea
 	slog.Debug("Received ExecuteDagPart request", "exec_id", req.GetExecId())
 
 	// simulate processing each algorithm in the request
-	for i, algorithm := range req.GetAlgorithms() {
+	for i, execution := range req.GetAlgorithmExecutions() {
 
 		// create a mock result for this algorithm
 		result := &pb.ExecutionResult{
 			ExecId: req.GetExecId(),
 			AlgorithmResult: &pb.AlgorithmResult{
-				Algorithm: algorithm,
+				Algorithm: execution.GetAlgorithm(),
 				Result: &pb.Result{
 					Status: pb.ResultStatus_RESULT_STATUS_SUCEEDED,
 					ResultData: &pb.Result_SingleValue{
@@ -49,7 +49,7 @@ func (s *mockOrcaProcessorServer) ExecuteDagPart(req *pb.ExecutionRequest, strea
 			return status.Errorf(codes.Internal, "failed to send result: %v", err)
 		}
 
-		slog.Debug("sent result for algorithm", "result_num", i+1, "algorithm_num", len(req.GetAlgorithms()), "algorithm_name", algorithm.GetName())
+		slog.Debug("sent result for algorithm", "result_num", i+1, "algorithm_num", len(req.GetAlgorithms()), "algorithm_name", execution.GetAlgorithm().GetName())
 	}
 
 	slog.Debug("completed ExecuteDagPart", "exec_id", req.GetExecId())
