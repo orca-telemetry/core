@@ -718,11 +718,23 @@ func (q *Queries) ReadProcessorsByIDs(ctx context.Context, processorIds []int64)
 
 const readResultsForAlgorithmByCount = `-- name: ReadResultsForAlgorithmByCount :many
 SELECT
-	r.id, windows_id, r.window_type_id, algorithm_id, result_value, result_array, result_json, w.id, w.window_type_id, time_from, time_to, origin, metadata, created
+	r.id as result_id,
+    r.algorithm_id,
+    w.id as window_id,
+    r.result_value, 
+    r.result_array,
+    r.result_json,
+    wt.name as window_type_name, 
+    wt.version as window_type_version,
+    w.time_from as window_time_from,
+    w.time_to as window_time_to,
+    w.origin as window_origin,
+    w.metadata as window_metadata
 FROM
 	results r
 JOIN windows w on
 	w.id = r.windows_id
+JOIN window_type wt on wt.id = w.window_type_id
 WHERE
 	r.algorithm_id = $1
     AND w.time_to < $2
@@ -736,20 +748,18 @@ type ReadResultsForAlgorithmByCountParams struct {
 }
 
 type ReadResultsForAlgorithmByCountRow struct {
-	ID             int64
-	WindowsID      pgtype.Int8
-	WindowTypeID   pgtype.Int8
-	AlgorithmID    pgtype.Int8
-	ResultValue    pgtype.Float8
-	ResultArray    []float64
-	ResultJson     []byte
-	ID_2           int64
-	WindowTypeID_2 int64
-	TimeFrom       pgtype.Timestamp
-	TimeTo         pgtype.Timestamp
-	Origin         string
-	Metadata       []byte
-	Created        pgtype.Timestamp
+	ResultID          int64
+	AlgorithmID       pgtype.Int8
+	WindowID          int64
+	ResultValue       pgtype.Float8
+	ResultArray       []float64
+	ResultJson        []byte
+	WindowTypeName    string
+	WindowTypeVersion string
+	WindowTimeFrom    pgtype.Timestamp
+	WindowTimeTo      pgtype.Timestamp
+	WindowOrigin      string
+	WindowMetadata    []byte
 }
 
 func (q *Queries) ReadResultsForAlgorithmByCount(ctx context.Context, arg ReadResultsForAlgorithmByCountParams) ([]ReadResultsForAlgorithmByCountRow, error) {
@@ -762,20 +772,18 @@ func (q *Queries) ReadResultsForAlgorithmByCount(ctx context.Context, arg ReadRe
 	for rows.Next() {
 		var i ReadResultsForAlgorithmByCountRow
 		if err := rows.Scan(
-			&i.ID,
-			&i.WindowsID,
-			&i.WindowTypeID,
+			&i.ResultID,
 			&i.AlgorithmID,
+			&i.WindowID,
 			&i.ResultValue,
 			&i.ResultArray,
 			&i.ResultJson,
-			&i.ID_2,
-			&i.WindowTypeID_2,
-			&i.TimeFrom,
-			&i.TimeTo,
-			&i.Origin,
-			&i.Metadata,
-			&i.Created,
+			&i.WindowTypeName,
+			&i.WindowTypeVersion,
+			&i.WindowTimeFrom,
+			&i.WindowTimeTo,
+			&i.WindowOrigin,
+			&i.WindowMetadata,
 		); err != nil {
 			return nil, err
 		}
@@ -789,11 +797,23 @@ func (q *Queries) ReadResultsForAlgorithmByCount(ctx context.Context, arg ReadRe
 
 const readResultsForAlgorithmByTimedelta = `-- name: ReadResultsForAlgorithmByTimedelta :many
 SELECT
-	r.id, windows_id, r.window_type_id, algorithm_id, result_value, result_array, result_json, w.id, w.window_type_id, time_from, time_to, origin, metadata, created
+	r.id as result_id,
+    r.algorithm_id,
+    w.id as window_id,
+    r.result_value, 
+    r.result_array,
+    r.result_json,
+    wt.name as window_type_name, 
+    wt.version as window_type_version,
+    w.time_from as window_time_from,
+    w.time_to as window_time_to,
+    w.origin as window_origin,
+    w.metadata as window_metadata
 FROM
 	results r
 JOIN windows w ON
 	w.id = r.windows_id
+JOIN window_type wt on wt.id = w.window_type_id
 WHERE
 	r.algorithm_id = $1
     AND w.time_from > $2
@@ -808,20 +828,18 @@ type ReadResultsForAlgorithmByTimedeltaParams struct {
 }
 
 type ReadResultsForAlgorithmByTimedeltaRow struct {
-	ID             int64
-	WindowsID      pgtype.Int8
-	WindowTypeID   pgtype.Int8
-	AlgorithmID    pgtype.Int8
-	ResultValue    pgtype.Float8
-	ResultArray    []float64
-	ResultJson     []byte
-	ID_2           int64
-	WindowTypeID_2 int64
-	TimeFrom       pgtype.Timestamp
-	TimeTo         pgtype.Timestamp
-	Origin         string
-	Metadata       []byte
-	Created        pgtype.Timestamp
+	ResultID          int64
+	AlgorithmID       pgtype.Int8
+	WindowID          int64
+	ResultValue       pgtype.Float8
+	ResultArray       []float64
+	ResultJson        []byte
+	WindowTypeName    string
+	WindowTypeVersion string
+	WindowTimeFrom    pgtype.Timestamp
+	WindowTimeTo      pgtype.Timestamp
+	WindowOrigin      string
+	WindowMetadata    []byte
 }
 
 func (q *Queries) ReadResultsForAlgorithmByTimedelta(ctx context.Context, arg ReadResultsForAlgorithmByTimedeltaParams) ([]ReadResultsForAlgorithmByTimedeltaRow, error) {
@@ -834,20 +852,18 @@ func (q *Queries) ReadResultsForAlgorithmByTimedelta(ctx context.Context, arg Re
 	for rows.Next() {
 		var i ReadResultsForAlgorithmByTimedeltaRow
 		if err := rows.Scan(
-			&i.ID,
-			&i.WindowsID,
-			&i.WindowTypeID,
+			&i.ResultID,
 			&i.AlgorithmID,
+			&i.WindowID,
 			&i.ResultValue,
 			&i.ResultArray,
 			&i.ResultJson,
-			&i.ID_2,
-			&i.WindowTypeID_2,
-			&i.TimeFrom,
-			&i.TimeTo,
-			&i.Origin,
-			&i.Metadata,
-			&i.Created,
+			&i.WindowTypeName,
+			&i.WindowTypeVersion,
+			&i.WindowTimeFrom,
+			&i.WindowTimeTo,
+			&i.WindowOrigin,
+			&i.WindowMetadata,
 		); err != nil {
 			return nil, err
 		}

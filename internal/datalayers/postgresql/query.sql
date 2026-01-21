@@ -241,11 +241,23 @@ SELECT * FROM window_type_metadata_fields;
 
 -- name: ReadResultsForAlgorithmByTimedelta :many
 SELECT
-	*
+	r.id as result_id,
+    r.algorithm_id,
+    w.id as window_id,
+    r.result_value, 
+    r.result_array,
+    r.result_json,
+    wt.name as window_type_name, 
+    wt.version as window_type_version,
+    w.time_from as window_time_from,
+    w.time_to as window_time_to,
+    w.origin as window_origin,
+    w.metadata as window_metadata
 FROM
 	results r
 JOIN windows w ON
 	w.id = r.windows_id
+JOIN window_type wt on wt.id = w.window_type_id
 WHERE
 	r.algorithm_id = sqlc.arg('algorithm_id')
     AND w.time_from > sqlc.arg('search_from')
@@ -254,11 +266,23 @@ order by time_from, time_to desc;
 
 -- name: ReadResultsForAlgorithmByCount :many
 SELECT
-	*
+	r.id as result_id,
+    r.algorithm_id,
+    w.id as window_id,
+    r.result_value, 
+    r.result_array,
+    r.result_json,
+    wt.name as window_type_name, 
+    wt.version as window_type_version,
+    w.time_from as window_time_from,
+    w.time_to as window_time_to,
+    w.origin as window_origin,
+    w.metadata as window_metadata
 FROM
 	results r
 JOIN windows w on
 	w.id = r.windows_id
+JOIN window_type wt on wt.id = w.window_type_id
 WHERE
 	r.algorithm_id = sqlc.arg('algorithm_id')
     AND w.time_to < sqlc.arg('search_to')
