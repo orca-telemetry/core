@@ -24,6 +24,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func processTasks(
@@ -170,12 +171,13 @@ func processTasks(
 					// get details of the algorithm - dependencies will only
 					// exist in this block if they have run
 					algorithm_result := resultMap[algoDep.AlgoId].GetAlgorithmResult()
+					resultData := algorithm_result.GetResult().GetResultData()
 
 					// log the result as the first entry before considering lookbacks
 					dep_results := []*pb.AlgorithmDependencyResultRow{
 						{
 							Result: algorithm_result.GetResult(),
-							Window: algorithm_result.GetWindow(),
+							Window: window,
 						},
 					}
 
@@ -196,15 +198,36 @@ func processTasks(
 						}
 
 						for _, res := range results {
+							// parse out the window
+							windowMetadataPb, err := unmarshalToStructPb(res.WindowMetadata)
+							if err != nil {
+								return err
+							}
+							windowTimeFrom := timestamppb.Timestamp{
+								Seconds: res.WindowTimeFrom.Time.Unix(),
+								Nanos:   int32(res.WindowTimeFrom.Time.Nanosecond()),
+							}
+							windowTimeTo := timestamppb.Timestamp{
+								Seconds: res.WindowTimeTo.Time.Unix(),
+								Nanos:   int32(res.WindowTimeTo.Time.Nanosecond()),
+							}
+
 							// infer from the current algorithms result the result of
 							// the past data. this should always be consistent due to
 							// the checking that we do at processor registration time
-							resultData := algorithm_result.GetResult().GetResultData()
 							if _, ok := resultData.(*pb.Result_FloatValues); ok {
 								dep_results = append(dep_results, &pb.AlgorithmDependencyResultRow{
 									Result: &pb.Result{ResultData: &pb.Result_FloatValues{
 										FloatValues: &pb.FloatArray{Values: convertFloat64ToFloat32(res.ResultArray)},
 									}},
+									Window: &pb.Window{
+										TimeFrom:          &windowTimeFrom,
+										TimeTo:            &windowTimeTo,
+										Origin:            res.WindowOrigin,
+										WindowTypeName:    res.WindowTypeName,
+										WindowTypeVersion: res.WindowTypeVersion,
+										Metadata:          windowMetadataPb,
+									},
 								})
 							} else if _, ok := resultData.(*pb.Result_StructValue); ok {
 								var data map[string]any
@@ -222,12 +245,28 @@ func processTasks(
 									Result: &pb.Result{ResultData: &pb.Result_StructValue{
 										StructValue: result_Struct,
 									}},
+									Window: &pb.Window{
+										TimeFrom:          &windowTimeFrom,
+										TimeTo:            &windowTimeTo,
+										Origin:            res.WindowOrigin,
+										WindowTypeName:    res.WindowTypeName,
+										WindowTypeVersion: res.WindowTypeVersion,
+										Metadata:          windowMetadataPb,
+									},
 								})
 							} else if _, ok := resultData.(*pb.Result_SingleValue); ok {
 								dep_results = append(dep_results, &pb.AlgorithmDependencyResultRow{
 									Result: &pb.Result{ResultData: &pb.Result_SingleValue{
 										SingleValue: algorithm_result.GetResult().GetSingleValue(),
 									}},
+									Window: &pb.Window{
+										TimeFrom:          &windowTimeFrom,
+										TimeTo:            &windowTimeTo,
+										Origin:            res.WindowOrigin,
+										WindowTypeName:    res.WindowTypeName,
+										WindowTypeVersion: res.WindowTypeVersion,
+										Metadata:          windowMetadataPb,
+									},
 								})
 							} else {
 								slog.Warn("could not assert type of result from algorithm", "algorithmId", res.AlgorithmID)
@@ -239,7 +278,7 @@ func processTasks(
 						}
 
 					} else if algoDep.Lookback.Timedelta > 0 {
-						earliest_time_of_latest_result := algorithm_result.GetWindow().GetTimeFrom().AsTime().UTC()
+						earliest_time_of_latest_result := window.GetTimeFrom().AsTime().UTC()
 						search_from := earliest_time_of_latest_result.Add(-time.Duration(algoDep.Lookback.Timedelta))
 
 						results, err := d.queries.ReadResultsForAlgorithmByTimedelta(ctx, ReadResultsForAlgorithmByTimedeltaParams{
@@ -249,7 +288,7 @@ func processTasks(
 								Valid: true,
 							},
 							SearchTo: pgtype.Timestamp{
-								Time:  algorithm_result.GetWindow().GetTimeFrom().AsTime().UTC(),
+								Time:  earliest_time_of_latest_result,
 								Valid: true,
 							},
 						})
@@ -258,14 +297,75 @@ func processTasks(
 							return fmt.Errorf("could not read algorithm results with lookback count %d: %w", algoDep.Lookback.Count, err)
 
 						}
-
 						for _, res := range results {
-							if algorithm_result.GetAlgorithm().GetResultType() == pb.ResultType_ARRAY {
+							// parse out the window
+							windowMetadataPb, err := unmarshalToStructPb(res.WindowMetadata)
+							if err != nil {
+								return err
+							}
+							windowTimeFrom := timestamppb.Timestamp{
+								Seconds: res.WindowTimeFrom.Time.Unix(),
+								Nanos:   int32(res.WindowTimeFrom.Time.Nanosecond()),
+							}
+							windowTimeTo := timestamppb.Timestamp{
+								Seconds: res.WindowTimeTo.Time.Unix(),
+								Nanos:   int32(res.WindowTimeTo.Time.Nanosecond()),
+							}
+							if _, ok := resultData.(*pb.Result_FloatValues); ok {
 								dep_results = append(dep_results, &pb.AlgorithmDependencyResultRow{
 									Result: &pb.Result{ResultData: &pb.Result_FloatValues{
 										FloatValues: &pb.FloatArray{Values: convertFloat64ToFloat32(res.ResultArray)},
 									}},
+									Window: &pb.Window{
+										TimeFrom:          &windowTimeFrom,
+										TimeTo:            &windowTimeTo,
+										Origin:            res.WindowOrigin,
+										WindowTypeName:    res.WindowTypeName,
+										WindowTypeVersion: res.WindowTypeVersion,
+										Metadata:          windowMetadataPb,
+									},
 								})
+							} else if _, ok := resultData.(*pb.Result_StructValue); ok {
+								var data map[string]any
+								err := json.Unmarshal(res.ResultJson, &data)
+								if err != nil {
+									return err
+								}
+
+								result_Struct, err := structpb.NewStruct(data)
+								if err != nil {
+									return err
+								}
+
+								dep_results = append(dep_results, &pb.AlgorithmDependencyResultRow{
+									Result: &pb.Result{ResultData: &pb.Result_StructValue{
+										StructValue: result_Struct,
+									}},
+									Window: &pb.Window{
+										TimeFrom:          &windowTimeFrom,
+										TimeTo:            &windowTimeTo,
+										Origin:            res.WindowOrigin,
+										WindowTypeName:    res.WindowTypeName,
+										WindowTypeVersion: res.WindowTypeVersion,
+										Metadata:          windowMetadataPb,
+									},
+								})
+							} else if _, ok := resultData.(*pb.Result_SingleValue); ok {
+								dep_results = append(dep_results, &pb.AlgorithmDependencyResultRow{
+									Result: &pb.Result{ResultData: &pb.Result_SingleValue{
+										SingleValue: algorithm_result.GetResult().GetSingleValue(),
+									}},
+									Window: &pb.Window{
+										TimeFrom:          &windowTimeFrom,
+										TimeTo:            &windowTimeTo,
+										Origin:            res.WindowOrigin,
+										WindowTypeName:    res.WindowTypeName,
+										WindowTypeVersion: res.WindowTypeVersion,
+										Metadata:          windowMetadataPb,
+									},
+								})
+							} else {
+								slog.Warn("could not assert type of result from algorithm", "algorithmId", res.AlgorithmID)
 							}
 						}
 						algorithm_dependencies[jj] = &pb.AlgorithmDependencyResult{
@@ -402,4 +502,13 @@ func convertFloat64ToFloat32(float64Slice []float64) []float32 {
 
 func convertStructToJsonBytes(s *structpb.Struct) ([]byte, error) {
 	return protojson.Marshal(s)
+}
+
+func unmarshalToStructPb(data []byte) (*structpb.Struct, error) {
+	var m map[string]interface{}
+	if err := json.Unmarshal(data, &m); err != nil {
+		return nil, err
+	}
+
+	return structpb.NewStruct(m)
 }
