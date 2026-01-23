@@ -37,7 +37,7 @@ archives:
 
 dockers_v2:
   - images:
-      - "ghcr.io/orc-analytics/core"
+      - "ghcr.io/orca-telemetry/core"
 
     tags:
       - "{{ .Version }}"
