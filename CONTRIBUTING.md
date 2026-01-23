@@ -62,7 +62,7 @@ Go to the main Orca repo and open a PR. Describe your change clearly.
 
 ## 🏗️ Issues and Feature Requests
 
-- Report bugs or request features in [GitHub Issues](https://github.com/orc-analytics/orca/issues).
+- Report bugs or request features in [GitHub Issues](https://github.com/orca-telemetry/orca/issues).
 - Check for existing issues before creating a new one.
 
 ---
