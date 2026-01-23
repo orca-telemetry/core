@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	types "github.com/orc-analytics/core/internal/types"
-	pb "github.com/orc-analytics/core/protobufs/go"
+	types "github.com/orca-telemetry/core/internal/types"
+	pb "github.com/orca-telemetry/core/protobufs/go"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 

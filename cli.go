@@ -10,8 +10,8 @@ import (
 	"slices"
 	"strings"
 
-	dlyrs "github.com/orc-analytics/core/internal/datalayers"
-	envs "github.com/orc-analytics/core/internal/envs"
+	dlyrs "github.com/orca-telemetry/core/internal/datalayers"
+	envs "github.com/orca-telemetry/core/internal/envs"
 )
 
 type cliFlags struct {

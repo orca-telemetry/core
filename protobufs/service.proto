@@ -1,6 +1,6 @@
 syntax="proto3";
 
-option go_package = "github.com/orc-analytics/core/protobufs/go";
+option go_package = "github.com/orca-telemetry/core/protobufs/go";
 
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
